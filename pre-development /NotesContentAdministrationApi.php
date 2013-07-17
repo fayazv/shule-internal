@@ -84,7 +84,7 @@ class Notes
    }
 
 
-   public function edit_augmented_notes($subject_id, $item_id, $content)
+   public function editContent($subject_id, $item_id, $content)
    {
       $subject_notes_array = json_decode(getAugmentedNotes($subject_id), true);
       for ($subject_notes_array as $topic) 
@@ -145,7 +145,7 @@ class Notes
    }
 
     
-   public function deleteNotes($subject_id, $itemId)
+   public function deleteContent($subject_id, $itemId)
    {
       $subject_notes_array = json_decode(getAugmentedNotes($subject_id), true);
       for ($subject_notes_array as $topic) 
@@ -204,9 +204,11 @@ class Notes
             }
          }
       }
+      $new_augmented_notes = json_encode($subject_notes_array);
+      save($subject_id, $new_augmented_notes);
+      return $new_augmented_notes;
    }
-   $new_augmented_notes = json_encode($subject_notes_array);
-   save($subject_id, $new_augmented_notes);
-   return $new_augmented_notes;
+   
+   TODO: add Tags, Media, AddContent
 
 }
