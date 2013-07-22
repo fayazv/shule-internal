@@ -127,29 +127,32 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         return $augmented_notes_json;
     }
     
-    private function idAssigner($notesArray) {
-        if(is_array($notesArray)) {
-            echo "HI";   
-var_dump($notesArray);
-        } else {
-                       echo "by";
-            var_dump($notesArray);
+    // this modifies the provides notesArray to fill in missing ids
+    private function idAssigner(&$notesElement) {
+        // check if this tier has a "content" key and no "id" key. If so, create a unique id key.
+        if (array_key_exists('content',$notesElement) && !array_key_exists('id',$notesElement)) {
+            $notesElement['id'] = intval(1000000*microtime(true)); // generate a unique id
+        }
+        //iterate keys and recurse on any that are arrays 
+        foreach ($notesElement as $key=>&$value) {
+            if(is_array($value)) {
+                $this->idAssigner($value);
+            }
         }
     }
 
     public function setAugmentedNotes($subjectId, $newContent) {
         // make sure all content has an id. Walk the entire tree. If a
         // "content" key exists but no "id" key exists, add an "id" key. 
-//        echo $newContent;
         $notesArray = json_decode($newContent, true);
         if(!$notesArray)
         {
             throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
         }
-
-        //         echo $notesArray;
-        $this->idAssigner($notesArray);
-
+        
+        foreach ($notesArray as &$notesElement) {
+            $this->idAssigner($notesElement);
+        }
         $updatedContent = json_encode($notesArray);
 
         $this->save($subjectId,$updatedContent);

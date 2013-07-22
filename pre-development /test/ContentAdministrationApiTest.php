@@ -7,8 +7,8 @@ $sdk = new ContentAdministrationSDKImpl("/tmp/");
 // simple set and get
 $physicsSubjectId = 1;
 $samplePhysicsContent = file_get_contents("input/samplePhysicsNotes");
-//$sdk->setAugmentedNotes($physicsSubjectId,$samplePhysicsContent);
-//echo $sdk->getAugmentedNotes($physicsSubjectId);
+$sdk->setAugmentedNotes($physicsSubjectId,$samplePhysicsContent);
+echo $sdk->getAugmentedNotes($physicsSubjectId);
 
 // set with new content. the output should provide ids to the new content only.
 $physicsSubjectId = 1;
