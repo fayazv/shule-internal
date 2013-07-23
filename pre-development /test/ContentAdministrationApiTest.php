@@ -16,7 +16,20 @@ $samplePhysicsWithNewContent = file_get_contents("input/samplePhysicsNotesWithNe
 $sdk->setAugmentedNotes($physicsSubjectId,$samplePhysicsWithNewContent);
 //echo $sdk->getAugmentedNotes($physicsSubjectId);
 
-$sdk->editContent(11,"Edited!");
-echo $sdk->getAugmentedNotes($physicsSubjectId);
+$sdk->editContent(2,"Edited!");
+//echo $sdk->getAugmentedNotes($physicsSubjectId);
 
+$sdk->editContent(4,"Edited!");
+//echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->editContent(11,"Edited!");
+//echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+$sdk->deleteContent(6);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+$sdk->deleteContent(9);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
 ?>

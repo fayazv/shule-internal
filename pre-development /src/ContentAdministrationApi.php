@@ -44,7 +44,7 @@ interface ContentAdministrationSDK
      * Expected ids: project, form, subject, topic, subtopic, concept 
      * Unrecognized: no-op
      */
-    public function addContent($id,$newContent);
+    public function addContent($parentId,$newContent);
    
     /**
      * Sets the value of the provided id to be editedContent
@@ -160,7 +160,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $this->save($subjectId,$updatedContent);
     }
 
-    public function addContent($id,$newContent) {
+    public function addContent($parentId,$newContent) {
 
     }
 
@@ -198,7 +198,6 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $returnValue = false;
         foreach ($notesArray as &$notesElement) {
             if ( $this->updateIdContent($notesElement,$id,$editedContent) ) {
-                echo "lol";
                 $returnValue = true;
                 break;
             }
@@ -209,8 +208,50 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         return $returnValue;
     }
 
-    public function deleteContent($id) {
 
+
+    // this searches the provided notesElement recursively to find the id and delete the subtree
+    // returns true if the id was found and delete
+    private function deleteIdContent(&$parent, $key, &$notesElement,$id) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $id) {
+            unset($parent[$key]);
+            return true;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as $childKey=>&$child) {
+                $returnValue = $this->deleteIdContent($notesElement['children'], $childKey, $child,$id);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // returns true if the id was found and deleted. otherwise returns false. 
+    public function deleteContent($id) {
+        // get the content, and the walk the array to look for the provided id. if it exists, delete it and it's subtree
+        $notesContent = $this->getAugmentedNotes($this->subjectId);
+
+        $notesArray = json_decode($notesContent, true);
+        if(!$notesArray)
+        {
+            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
+        }
+        
+        $returnValue = false;
+        foreach ($notesArray as $key=>&$notesElement) {
+            if ( $this->deleteIdContent($notesArray, $key, $notesElement,$id) ) {
+                $returnValue = true;
+                break;
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue;
     }
 
     public function addTags($parentId, $newTag) {
