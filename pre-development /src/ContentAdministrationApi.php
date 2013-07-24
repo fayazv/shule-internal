@@ -106,6 +106,21 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $this->subjectId = $subjectId;
     }
 
+    private function generateUniqueId() {
+        return intval(1000000*microtime(true)); 
+    }
+
+    private function loadNotesArray() {
+        $notesContent = $this->getAugmentedNotes($this->subjectId);
+
+        $notesArray = json_decode($notesContent, true);
+        if(!$notesArray)
+        {
+            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
+        }
+        return $notesArray ;
+    }
+    
     private function save($subject_id, $json)
     {
         //save the serialized array version into a file
@@ -122,7 +137,6 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         if( file_exists("{$this->baseDirectory}/{$subjectId}.txt") === false ) {
             throw new Exception('Subject ID is invalid');
         }
-      
         $augmented_notes_serialized = file_get_contents("{$this->baseDirectory}/{$subjectId}.txt");
         $augmented_notes_json = unserialize($augmented_notes_serialized);
             
@@ -133,7 +147,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     private function idAssigner(&$notesElement) {
         // check if this tier has a "content" key and no "id" key. If so, create a unique id key.
         if (array_key_exists('content',$notesElement) && !array_key_exists('id',$notesElement)) {
-            $notesElement['id'] = intval(1000000*microtime(true)); // generate a unique id
+            $notesElement['id'] = $this->generateUniqueId();
         }
         //iterate keys and recurse on any that are arrays 
         foreach ($notesElement as $key=>&$value) {
@@ -160,8 +174,56 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $this->save($subjectId,$updatedContent);
     }
 
-    public function addContent($parentId,$newContent) {
+    // this searches the provided notesElement recursively to find the parentId. Then add a new child to the end and. Give it a new random id and assign the newContent
+    // returns true if the parentId was found and the child was added
+    private function addChild(&$notesElement,$parentId,$newContent) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $parentId) {
+            // get the current child count
+            $newChildIndex = 0;
+            if(count($notesElement['children']) > 0) {
+                $newChildIndex = max(array_keys($notesElement['children']))+1;
+            }
+            $notesElement['children'][$newChildIndex]['id'] = $this->generateUniqueId();
+            $notesElement['children'][$newChildIndex]['content'] = $newContent;
+            return true;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as &$child) {
+                $returnValue = $this->addChild($child,$parentId,$newContent);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
+    // returns true if the id was found and the newContent was added as a child
+    public function addContent($parentId,$newContent) {
+        /// get the content. and then walk the array to look for the provided parentId. If it exists, add the newContent as the last child. Give it a new id.
+        $notesArray = $this->loadNotesArray();        
+
+        // check to see if the parent is the subject. if so, just add the child to the end
+        if($parentId == $this->subjectId) {
+            $newChildIndex = count($notesArray);
+            $notesArray[$newChildIndex]['id'] = $this->generateUniqueId();
+            $notesArray[$newChildIndex]['content'] = $newContent;
+            $returnValue = true;
+        } else {
+            $returnValue = false;
+            foreach ($notesArray as &$notesElement) {
+                if ( $this->addChild($notesElement,$parentId,$newContent) ) {
+                    $returnValue = true;
+                    break;
+                }
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue;
     }
 
     // this searches the provided notesElement recursively to find the id and update the content
@@ -186,14 +248,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
 
     // returns true if the id was found and updated. otherwise returns false. 
     public function editContent($id,$editedContent) {
-        // get the content, and the walk the array to look for the provided id. if it exists, replace the content
-        $notesContent = $this->getAugmentedNotes($this->subjectId);
-
-        $notesArray = json_decode($notesContent, true);
-        if(!$notesArray)
-        {
-            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
-        }
+        // get the content, and then walk the array to look for the provided id. if it exists, replace the content
+        $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
         foreach ($notesArray as &$notesElement) {
@@ -208,7 +264,21 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         return $returnValue;
     }
 
-
+    // input: array with integer keys
+    // output: re-key the array so that it's keys are 0 to len(arry)-1
+    private function renumberArrayKeys(&$array) {
+        $i = 0;
+        foreach(array_keys($array) as $key) {
+            echo $key . "\n".  "\n".$i."\n";
+            if(!array_key_exists($i,$array))
+            {
+                echo $key . "\n". "\n".$i."\n";
+                $array[$i] = $array[$key];
+                unset($array[$key]);
+            }
+            $i++;
+        }
+    }
 
     // this searches the provided notesElement recursively to find the id and delete the subtree
     // returns true if the id was found and delete
@@ -216,6 +286,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         // check if we've found the id of interest
         if ($notesElement['id'] == $id) {
             unset($parent[$key]);
+            $this->renumberArrayKeys($parent);
+            var_dump($parent);
             return true;
         }
         // otherwise check the children, if any exist
@@ -233,13 +305,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     // returns true if the id was found and deleted. otherwise returns false. 
     public function deleteContent($id) {
         // get the content, and the walk the array to look for the provided id. if it exists, delete it and it's subtree
-        $notesContent = $this->getAugmentedNotes($this->subjectId);
-
-        $notesArray = json_decode($notesContent, true);
-        if(!$notesArray)
-        {
-            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
-        }
+        $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
         foreach ($notesArray as $key=>&$notesElement) {
