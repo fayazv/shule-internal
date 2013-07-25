@@ -70,7 +70,7 @@ interface ContentAdministrationSDK
      * Expected parentIds: topic, subtopic, concept
      * Unrecognized: no-op
      */
-    public function addTags($parentId, $newTag);
+    public function addTag($parentId, $newTag);
 
     /**
      * Delete an existing tag
@@ -174,7 +174,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $this->save($subjectId,$updatedContent);
     }
 
-    // this searches the provided notesElement recursively to find the parentId. Then add a new child to the end and. Give it a new random id and assign the newContent
+    // this searches the provided notesElement recursively to find the parentId. Then add a new child to the end. Give it a new random id and assign the newContent
     // returns true if the parentId was found and the child was added
     private function addChild(&$notesElement,$parentId,$newContent) {
         // check if we've found the id of interest
@@ -202,7 +202,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
 
     // returns true if the id was found and the newContent was added as a child
     public function addContent($parentId,$newContent) {
-        /// get the content. and then walk the array to look for the provided parentId. If it exists, add the newContent as the last child. Give it a new id.
+        // get the content. and then walk the array to look for the provided parentId. If it exists, add the newContent as the last child. Give it a new id.
         $notesArray = $this->loadNotesArray();        
 
         // check to see if the parent is the subject. if so, just add the child to the end
@@ -269,10 +269,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     private function renumberArrayKeys(&$array) {
         $i = 0;
         foreach(array_keys($array) as $key) {
-            echo $key . "\n".  "\n".$i."\n";
             if(!array_key_exists($i,$array))
             {
-                echo $key . "\n". "\n".$i."\n";
                 $array[$i] = $array[$key];
                 unset($array[$key]);
             }
@@ -281,13 +279,12 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     }
 
     // this searches the provided notesElement recursively to find the id and delete the subtree
-    // returns true if the id was found and delete
+    // returns true if the id was found and deleted
     private function deleteIdContent(&$parent, $key, &$notesElement,$id) {
         // check if we've found the id of interest
         if ($notesElement['id'] == $id) {
             unset($parent[$key]);
             $this->renumberArrayKeys($parent);
-            var_dump($parent);
             return true;
         }
         // otherwise check the children, if any exist
@@ -304,7 +301,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
 
     // returns true if the id was found and deleted. otherwise returns false. 
     public function deleteContent($id) {
-        // get the content, and the walk the array to look for the provided id. if it exists, delete it and it's subtree
+        // get the content, and the walk the array to look for the provided id. if it exists, delete it and its subtree
         $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
@@ -320,12 +317,95 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         return $returnValue;
     }
 
-    public function addTags($parentId, $newTag) {
-
+    // this searches the provided notesElement recursively to find the parentId. Then add a new tag to the end. Give it a new random id and assign the newTag
+    // returns true if the parentId was found and the newTag was added
+    private function addTagInternal(&$notesElement,$parentId,$newTag) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $parentId) {
+            // get the current tag count
+            $newTagIndex = 0;
+            if(count($notesElement['tags']) > 0) {
+                $newTagIndex = max(array_keys($notesElement['tags']))+1;
+            }
+            $notesElement['tags'][$newTagIndex]['id'] = $this->generateUniqueId();
+            $notesElement['tags'][$newTagIndex]['content'] = $newTag;
+            return true;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as &$child) {
+                $returnValue = $this->addTagInternal($child,$parentId,$newTag);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public function deleteTag($parentId, $tagId) {
+    // returns true if the id was found and the newTag was added 
+    public function addTag($parentId, $newTag) {
+        // get the content. and then walk the array to look for the provided parentId. If it exists, add the newTag as the last tag. Give it a new id.
+        $notesArray = $this->loadNotesArray();        
 
+        $returnValue = false;
+        foreach ($notesArray as &$notesElement) {
+            if ( $this->addTagInternal($notesElement,$parentId,$newTag) ) {
+                $returnValue = true;
+                break;
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue; 
+    }
+
+    // this searches the provided notesElement recursively to find the id and delete it
+    // returns true if the id was found and deleted
+    private function deleteTagInternal(&$notesElement,$parentId,$tagId) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $parentId) {
+            if(array_key_exists('tags',$notesElement)) {
+                // iterate the array and check all the ids
+                foreach($notesElement['tags'] as $key=>$tagHolder) {
+                    if($tagHolder['id'] == $tagId) {
+                        unset($notesElement['tags'][$key]);
+                        $this->renumberArrayKeys($notesElement['tags']);
+                        return true;
+                    }
+                }
+            } 
+            return false;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as $childKey=>&$child) {
+                $returnValue = $this->deleteTagInternal($child, $parentId, $tagId);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // returns true if the id was found and deleted. otherwise returns false.
+    public function deleteTag($parentId, $tagId) {
+        // get the content, and the walk the array to look for the provided id. if it exists, delete it 
+        $notesArray = $this->loadNotesArray();
+        
+        $returnValue = false;
+        foreach ($notesArray as $key=>&$notesElement) {
+            if ( $this->deleteTagInternal($notesElement,$parentId, $tagId) ) {
+                $returnValue = true;
+                break;
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue;
     }
 
     public function addMedia($parentId, $newContent, $type, $description, $isPrintable) {

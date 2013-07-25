@@ -50,5 +50,40 @@ $sdk->addContent(1,"News");
 echo "\n\n";
 echo $sdk->getAugmentedNotes($physicsSubjectId);
 
+echo "addTag\n";
+// no-op because 3 is deleted
+$sdk->addTag(3,"Gauss");
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->addTag(2,"Test Tag");
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->addTag(8,"cross-sectional area");
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->addTag(7,"normal force");
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->deleteTag(7,1);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->deleteTag(2,2);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+// no-op
+$sdk->deleteTag(2,2);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+$sdk->deleteTag(3,2);
+echo "\n\n";
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
 
 ?>
