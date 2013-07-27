@@ -9,6 +9,19 @@
  *
  * Specifically, this API is for adding and editing notes/syllabus content,
  * which involves displaying the content on the editing pages as well.
+ *
+ * Usage: 
+ *     $sdk = new ContentAdministrationSDKImpl(<dataDir>,<subjectId>);
+ *       -- <dataDir> is a path that is writeable by this class. This class
+ *          emulates the API interaction by backing up the data in a
+ *          flatfile. The files are placed in the dataDir and named after the
+ *          subjectId
+ *       -- <subjectId> is the id for the subject whose notes and syllabus are
+ *          being operated on. This is a crutch for this sdk implementation
+ *          and will not be necessary for the real one since all notes ids
+ *          will be globally unique. A specific instance of
+ *          ContentAdministrationSDKImpl can only operate on a single
+ *          subjectId
  */
 
 interface ContentAdministrationSDK
@@ -96,6 +109,7 @@ interface ContentAdministrationSDK
 
 }
 
+
 class ContentAdministrationSDKImpl implements ContentAdministrationSDK
 {
     private $baseDirectory;
@@ -125,7 +139,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     private function save($subject_id, $json)
     {
         //save the serialized array version into a file
-        $success = file_put_contents("{$this->baseDirectory}/{$subject_id}.txt", serialize($json));
+        $success = file_put_contents("{$this->baseDirectory}/{$subject_id}", serialize($json));
       
         //if saving was not successful, throw an exception
         if( $success === false ) 
@@ -135,10 +149,10 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     }
     
     public function getAugmentedNotes($subjectId) {
-        if( file_exists("{$this->baseDirectory}/{$subjectId}.txt") === false ) {
+        if( file_exists("{$this->baseDirectory}/{$subjectId}") === false ) {
             throw new Exception('Subject ID is invalid');
         }
-        $augmented_notes_serialized = file_get_contents("{$this->baseDirectory}/{$subjectId}.txt");
+        $augmented_notes_serialized = file_get_contents("{$this->baseDirectory}/{$subjectId}");
         $augmented_notes_json = unserialize($augmented_notes_serialized);
             
         return $augmented_notes_json;
