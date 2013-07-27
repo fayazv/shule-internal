@@ -70,7 +70,16 @@
                                         "description": "A demonstration of drag slowing down a parachute",
 					"isPrintable": false
                                     }
-                                ]                                
+                                ],
+				"image":
+				[
+				    {
+				        "id": 3,
+					"content": "www.website.com/sinking.jpg",
+					"description": "Sinking object feels drag",
+					"isPrintable": true
+				    }
+				]                                
                             }
                         }
                     ]

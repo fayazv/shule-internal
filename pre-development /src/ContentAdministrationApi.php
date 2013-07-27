@@ -104,6 +104,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     function __construct($baseDirectory, $subjectId) {
         $this->baseDirectory = $baseDirectory;
         $this->subjectId = $subjectId;
+        $this->setAugmentedNotes($subjectId,'[{}]');
     }
 
     private function generateUniqueId() {
@@ -324,7 +325,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         if ($notesElement['id'] == $parentId) {
             // get the current tag count
             $newTagIndex = 0;
-            if(count($notesElement['tags']) > 0) {
+            if(array_key_exists('tags',$notesElement) && count($notesElement['tags']) > 0) {
                 $newTagIndex = max(array_keys($notesElement['tags']))+1;
             }
             $notesElement['tags'][$newTagIndex]['id'] = $this->generateUniqueId();
@@ -408,12 +409,103 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         return $returnValue;
     }
 
-    public function addMedia($parentId, $newContent, $type, $description, $isPrintable) {
-
+    // this searches the provided notesElement recursively to find the parentId. Then add a new media element to the end. Give it a new random id and assign the new media info
+    // returns true if the parentId was found and the new media was added
+    private function addMediaInternal(&$notesElement,$parentId,$newContent, $type, $description, $isPrintable) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $parentId) {
+            // get the current media count. include the type in the search. 
+            $newMediaIndex = 0;
+            if(array_key_exists('media',$notesElement) && count($notesElement['media']) > 0 && array_key_exists($type,$notesElement['media']) && count($notesElement['media'][$type]) > 0) {
+                $newMediaIndex = max(array_keys($notesElement['media'][$type]))+1;
+            }
+            $notesElement['media'][$type][$newMediaIndex]['id'] = $this->generateUniqueId();
+            $notesElement['media'][$type][$newMediaIndex]['content'] = $newContent;
+            $notesElement['media'][$type][$newMediaIndex]['description'] = $description;
+            $notesElement['media'][$type][$newMediaIndex]['isPrintable'] = $isPrintable;
+            return true;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as &$child) {
+                $returnValue = $this->addMediaInternal($child,$parentId,$newContent, $type, $description, $isPrintable);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public function deleteMedia($parentId, $mediaId) {
+    // returns true if the id was found and the new media was added 
+    public function addMedia($parentId, $newContent, $type, $description, $isPrintable) {
+        // get the content. and then walk the array to look for the provided parentId. If it exists, add the new media as the last media entry. Give it a new id.
+        $notesArray = $this->loadNotesArray();        
 
+        $returnValue = false;
+        foreach ($notesArray as &$notesElement) {
+            if ( $this->addMediaInternal($notesElement,$parentId,$newContent, $type, $description, $isPrintable) ) {
+                $returnValue = true;
+                break;
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue; 
+    }
+
+    // this searches the provided notesElement recursively to find the id and delete it
+    // returns true if the id was found and deleted
+    private function deleteMediaInternal(&$notesElement,$parentId,$mediaId) {
+        // check if we've found the id of interest
+        if ($notesElement['id'] == $parentId) {
+            if(array_key_exists('media',$notesElement)) {
+                // iterate the array and check all the ids
+                foreach($notesElement['media'] as $mediaTypeKey=>&$mediaTypeValues) {
+                    foreach($mediaTypeValues as $key=>$mediaHolder) {
+                        if($mediaHolder['id'] == $mediaId) {
+                            unset($mediaTypeValues[$key]);
+                            $this->renumberArrayKeys($mediaTypeValues);
+                            // check if the media type is now empty
+                            if( count($mediaTypeValues) == 0) {
+                                unset($notesElement['media'][$mediaTypeKey]);
+                            }
+                            return true;
+                        }
+                    }
+                }
+            } 
+            return false;
+        }
+        // otherwise check the children, if any exist
+        if(array_key_exists('children',$notesElement)) {
+            foreach($notesElement['children'] as $childKey=>&$child) {
+                $returnValue = $this->deleteMediaInternal($child, $parentId, $mediaId);
+                if ( $returnValue ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // returns true if the id was found and deleted. otherwise returns false.
+    public function deleteMedia($parentId, $mediaId) {
+        // get the content, and the walk the array to look for the provided id. if it exists, delete it 
+        $notesArray = $this->loadNotesArray();
+        
+        $returnValue = false;
+        foreach ($notesArray as $key=>&$notesElement) {
+            if ( $this->deleteMediaInternal($notesElement,$parentId, $mediaId) ) {
+                $returnValue = true;
+                break;
+            }
+        }
+
+        $updatedContent = json_encode($notesArray);
+        $this->save($this->subjectId,$updatedContent);
+        return $returnValue;
     }
 
 }
