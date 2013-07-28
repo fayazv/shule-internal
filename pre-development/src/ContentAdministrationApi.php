@@ -300,6 +300,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     }
 
     // returns true if the id was found and deleted. otherwise returns false. 
+    // NOTE: delete content on the subjectId is not supported in this test implementation
     public function deleteContent($id) {
         // get the content, and the walk the array to look for the provided id. if it exists, delete it and its subtree
         $notesArray = $this->loadNotesArray();
