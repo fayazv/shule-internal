@@ -1,13 +1,41 @@
 <?php
 
-include_once('/home/ldoshi/Documents/ShuleTemp/shule-internal/pre-development /src/ContentAdministrationApi.php');
+include_once('/home/ldoshi/Documents/ShuleTemp/shule-internal/pre-development/src/ContentAdministrationApi.php');
 
 $physicsSubjectId = 1;
-$sdk = new ContentAdministrationSDKImpl("/tmp/",$physicsSubjectId);
+$physicsSubjectName = "Physics";
+$sdk = new ContentAdministrationSDKImpl("/tmp/",$physicsSubjectId,$physicsSubjectName);
+
 echo $sdk->getAugmentedNotes($physicsSubjectId);
 echo "\n\n";
 
-// simple set and get
+// let's add things from scratch
+$sdk->addContent($physicsSubjectId,"Topic1");
+$sdk->addContent($physicsSubjectId,"Topic2");
+$sdk->addContent($physicsSubjectId,"Topic3");
+$augmentedNotes = $sdk->getAugmentedNotes($physicsSubjectId);
+echo $augmentedNotes;
+echo "\n\n";
+
+// now get the ids from the notes
+$augmentedNotesDecoded = json_decode($augmentedNotes, true);
+$i=0;
+$j=3;
+foreach ($augmentedNotesDecoded['children'] as $topic) {
+    $sdk->addContent($topic['id'],"Subtopic$i");
+    $sdk->addContent($topic['id'],"Subtopic$j");
+    $sdk->addTag($topic['id'],"Tag$i");
+    $sdk->addTag($topic['id'],"Tag$j");
+    $sdk->addMedia($topic['id'],"Media$i","image","Description$i",true);
+    $sdk->addMedia($topic['id'],"Media$i","youtube","Description$i",false);
+    $sdk->addMedia($topic['id'],"Media$j","image","Description$j",true);
+    $i++;
+    $j++;
+}
+echo $sdk->getAugmentedNotes($physicsSubjectId);
+
+
+// now try a simple set and get
 $samplePhysicsContent = file_get_contents("input/samplePhysicsNotes");
 $sdk->setAugmentedNotes($physicsSubjectId,$samplePhysicsContent);
 echo $sdk->getAugmentedNotes($physicsSubjectId);

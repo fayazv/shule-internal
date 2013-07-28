@@ -115,10 +115,10 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     private $baseDirectory;
     private $subjectId;
 
-    function __construct($baseDirectory, $subjectId) {
+    function __construct($baseDirectory, $subjectId, $subjectName) {
         $this->baseDirectory = $baseDirectory;
         $this->subjectId = $subjectId;
-        $this->setAugmentedNotes($subjectId,'[{}]');
+        $this->setAugmentedNotes($subjectId,'{"id":'.$subjectId.',"content":"'.$subjectId.'"}');
     }
 
     private function generateUniqueId() {
@@ -181,9 +181,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
             throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
         }
         
-        foreach ($notesArray as &$notesElement) {
-            $this->idAssigner($notesElement);
-        }
+        $this->idAssigner($notesArray);
 
         $updatedContent = json_encode($notesArray);
         $this->save($subjectId,$updatedContent);
@@ -196,9 +194,10 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         if ($notesElement['id'] == $parentId) {
             // get the current child count
             $newChildIndex = 0;
-            if(count($notesElement['children']) > 0) {
+            if(array_key_exists('children',$notesElement) && count($notesElement['children']) > 0) {
                 $newChildIndex = max(array_keys($notesElement['children']))+1;
             }
+            
             $notesElement['children'][$newChildIndex]['id'] = $this->generateUniqueId();
             $notesElement['children'][$newChildIndex]['content'] = $newContent;
             return true;
@@ -220,20 +219,9 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         // get the content. and then walk the array to look for the provided parentId. If it exists, add the newContent as the last child. Give it a new id.
         $notesArray = $this->loadNotesArray();        
 
-        // check to see if the parent is the subject. if so, just add the child to the end
-        if($parentId == $this->subjectId) {
-            $newChildIndex = count($notesArray);
-            $notesArray[$newChildIndex]['id'] = $this->generateUniqueId();
-            $notesArray[$newChildIndex]['content'] = $newContent;
+        $returnValue = false;
+        if ( $this->addChild($notesArray,$parentId,$newContent) ) {
             $returnValue = true;
-        } else {
-            $returnValue = false;
-            foreach ($notesArray as &$notesElement) {
-                if ( $this->addChild($notesElement,$parentId,$newContent) ) {
-                    $returnValue = true;
-                    break;
-                }
-            }
         }
 
         $updatedContent = json_encode($notesArray);
@@ -267,11 +255,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
-        foreach ($notesArray as &$notesElement) {
-            if ( $this->updateIdContent($notesElement,$id,$editedContent) ) {
-                $returnValue = true;
-                break;
-            }
+        if ( $this->updateIdContent($notesArray,$id,$editedContent) ) {
+            $returnValue = true;
         }
 
         $updatedContent = json_encode($notesArray);
@@ -320,11 +305,9 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
-        foreach ($notesArray as $key=>&$notesElement) {
-            if ( $this->deleteIdContent($notesArray, $key, $notesElement,$id) ) {
-                $returnValue = true;
-                break;
-            }
+        // parent and key not used at this tier
+        if ( $this->deleteIdContent($notesArray, 0, $notesArray,$id) ) {
+            $returnValue = true;
         }
 
         $updatedContent = json_encode($notesArray);
@@ -364,11 +347,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();        
 
         $returnValue = false;
-        foreach ($notesArray as &$notesElement) {
-            if ( $this->addTagInternal($notesElement,$parentId,$newTag) ) {
+        if ( $this->addTagInternal($notesArray,$parentId,$newTag) ) {
                 $returnValue = true;
-                break;
-            }
         }
 
         $updatedContent = json_encode($notesArray);
@@ -411,11 +391,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
-        foreach ($notesArray as $key=>&$notesElement) {
-            if ( $this->deleteTagInternal($notesElement,$parentId, $tagId) ) {
-                $returnValue = true;
-                break;
-            }
+        if ( $this->deleteTagInternal($notesArray,$parentId, $tagId) ) {
+            $returnValue = true;
         }
 
         $updatedContent = json_encode($notesArray);
@@ -457,11 +434,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();        
 
         $returnValue = false;
-        foreach ($notesArray as &$notesElement) {
-            if ( $this->addMediaInternal($notesElement,$parentId,$newContent, $type, $description, $isPrintable) ) {
-                $returnValue = true;
-                break;
-            }
+        if ( $this->addMediaInternal($notesArray,$parentId,$newContent, $type, $description, $isPrintable) ) {
+            $returnValue = true;
         }
 
         $updatedContent = json_encode($notesArray);
@@ -510,11 +484,8 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
         $notesArray = $this->loadNotesArray();
         
         $returnValue = false;
-        foreach ($notesArray as $key=>&$notesElement) {
-            if ( $this->deleteMediaInternal($notesElement,$parentId, $mediaId) ) {
+        if ( $this->deleteMediaInternal($notesArray,$parentId, $mediaId) ) {
                 $returnValue = true;
-                break;
-            }
         }
 
         $updatedContent = json_encode($notesArray);
