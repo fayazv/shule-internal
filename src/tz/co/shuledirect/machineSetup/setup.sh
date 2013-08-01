@@ -4,5 +4,5 @@ sudo apt-get install apache2
 sudo apt-get install mysql-server libapache2-mod-auth-mysql php5-mysql
 sudo apt-get install php5
 sudo apt-get install emacs
-sudo chmod -R ubuntu /var/www
-ln -s /var/www 
+sudo chown -R ubuntu /var/www
+sudo ln -s /home/ubuntu/shule-internal/src/tz/co/shuledirect/api/ /var/www
