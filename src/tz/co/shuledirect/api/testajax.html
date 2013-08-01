@@ -1,0 +1,14 @@
+<h1> hello </h1>
+
+<script>
+var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://ec2-54-213-109-207.us-west-2.compute.amazonaws.com/api/index.php/notes/getAugmentedNotes");
+    xhr.onreadystatechange = function () {
+      if (this.readyState == 4) {
+        alert('Status: '    + this.status + '<br>' +
+              'Headers: ' + JSON.stringify(this.getAllResponseHeaders()) + '<br><br>' +
+              'Body: '    + this.responseText);
+      }
+    };
+    xhr.send(null);
+</script>
