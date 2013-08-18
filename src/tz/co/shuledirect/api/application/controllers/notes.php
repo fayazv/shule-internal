@@ -7,9 +7,11 @@ class Notes extends REST_Controller
 {
     function getAugmentedNotes_get()
     {
-         $array = array(
-	     "foo" => "bar",
- 	     "bar" => "foo",
+    	$this->load->model('notes');
+    	$test = $this->notes->getAugmentedNotes();
+        $array = array(
+	    "foo" => $test,
+ 	    "bar" => "foo",
 	 );
 	 $this->response($array);	
     }
