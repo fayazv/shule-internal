@@ -5,15 +5,18 @@ require APPPATH.'/libraries/REST_Controller.php';
 
 class Notes extends REST_Controller
 {
-    function getAugmentedNotes_get($subjectId)
+    public function __construct()
     {
-    	$this->load->model('notes');
-    	$test = $this->notes->getAugmentedNotes();
-        $array = array(
-	    "foo" => $test,
- 	    "bar" => "foo",
-	 );
-	 $this->response($array);	
+        parent::__construct(); 
+        $this->load->model('Notes_m');
+    }
+
+    function getAugmentedNotes_get()
+    {
+    	$test = $this->Notes_m->getAugmentedNotes();
+        $data["foo"] = $test;
+        $data["bar"] = "lalala";
+	$this->response($data);	
     }
 
     function setAugmentedNotes($subjectId, $newContent)

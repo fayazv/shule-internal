@@ -1,5 +1,6 @@
 <?php
-class Notes extends CI_Model {
+
+class Notes_m extends CI_Model {
 
     function __construct()
     {
@@ -8,9 +9,7 @@ class Notes extends CI_Model {
 
     function getAugmentedNotes()
     {
-    	return "Ram is awesome";
+	return "frustration";
     }
-
 }
 
-?>
