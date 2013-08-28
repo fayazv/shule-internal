@@ -1,8 +1,10 @@
 <h1> hello </h1>
 
 <script>
+
+//Testing getAugmentedNotes()
 var xhr = new XMLHttpRequest();
-    xhr.open("GET", "ec2-54-213-107-79.us-west-2.compute.amazonaws.com/api/index.php/notes/getAugmentedNotes");
+    xhr.open("GET", "[EC2_MACHINE_URL]/api/index.php/notes/getAugmentedNotes");
     xhr.onreadystatechange = function () {
       if (this.readyState == 4) {
         alert('Status: '    + this.status + '<br>' +
@@ -10,5 +12,23 @@ var xhr = new XMLHttpRequest();
               'Body: '    + this.responseText);
       }
     };
-    xhr.send(null);
+    var data = "[{id: 123}]";
+    xhr.send(data);
+
+
+
+//setAugmentedNotes()
+var xhr1 = new XMLHttpRequest();
+    xhr1.open("POST", "[EC2_MACHINE_URL]/api/index.php/notes/setAugmentedNotes");
+    xhr1.onreadystatechange = function () {
+      if (this.readyState == 4) {
+        alert('Status: '    + this.status + '<br>' +
+              'Headers: ' + JSON.stringify(this.getAllResponseHeaders()) + '<br><br>' +
+              'Body: '    + this.responseText);
+      }
+    };
+    var data1 = "[{id: 123, content: 'blah blah blah'}]";
+    xhr1.send(data);
+
+
 </script>

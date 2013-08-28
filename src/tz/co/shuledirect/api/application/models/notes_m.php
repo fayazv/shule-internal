@@ -9,13 +9,15 @@ class Notes_m extends CI_Model {
 
     function getAugmentedNotes($subjectId)
     {
-    	return "TODO: implement this method";
+        //TODO: implement this method
+    	return $subjectId;
     }
     
 
     function setAugmentedNotes($subjectId, $newContent)
     {
-		return "TODO: implement this method";
+        //TODO: implement this method
+		return $newContent;
     }
 
 
