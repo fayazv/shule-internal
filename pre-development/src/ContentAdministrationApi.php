@@ -118,7 +118,7 @@ class ContentAdministrationSDKImpl implements ContentAdministrationSDK
     function __construct($baseDirectory, $subjectId, $subjectName) {
         $this->baseDirectory = $baseDirectory;
         $this->subjectId = $subjectId;
-        $this->setAugmentedNotes($subjectId,'{"id":'.$subjectId.',"content":"'.$subjectId.'"}');
+        $this->setAugmentedNotes($subjectId,'{"id":'.$subjectId.',"content":"'.$subjectName.'"}');
     }
 
     private function generateUniqueId() {

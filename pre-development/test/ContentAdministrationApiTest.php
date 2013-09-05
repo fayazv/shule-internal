@@ -33,7 +33,7 @@ foreach ($augmentedNotesDecoded['children'] as $topic) {
     $j++;
 }
 echo $sdk->getAugmentedNotes($physicsSubjectId);
-
+echo "\n\n";
 
 // now try a simple set and get
 $samplePhysicsContent = file_get_contents("input/samplePhysicsNotes");
