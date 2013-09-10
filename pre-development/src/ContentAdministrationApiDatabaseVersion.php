@@ -97,7 +97,7 @@ interface ContentAdministrationSDK
      * Expected parentId: subtopic, concept, paragraph
      * Unrecognized: no-op
      */
-    public function addMedia($parentId, $newContent, $type, $description, $isPrintable);
+    public function addMedia($parentId, $newContent, $type, $description);
 
     /**
      * Sets all the media of the given types, as links (strings)
@@ -236,269 +236,55 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return true;
     }
 
-    // this searches the provided notesElement recursively to find the id and update the content
-    // returns true if the id was found and updated
-    private function updateIdContent(&$notesElement,$id,$editedContent) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $id) {
-            $notesElement['content'] = $editedContent;
-            return true;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as &$child) {
-                $returnValue = $this->updateIdContent($child,$id,$editedContent);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+//    todo ldoshi: do edit, delete, add tag, add media... now fk should be enforced so dont need to check for ids existing.
 
     // returns true if the id was found and updated. otherwise returns false. 
     public function editContent($id,$editedContent) {
-        // get the content, and then walk the array to look for the provided id. if it exists, replace the content
-        $notesArray = $this->loadNotesArray();
-        
-        $returnValue = false;
-        if ( $this->updateIdContent($notesArray,$id,$editedContent) ) {
-            $returnValue = true;
-        }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue;
-    }
-
-    // input: array with integer keys
-    // output: re-key the array so that it's keys are 0 to len(arry)-1
-    private function renumberArrayKeys(&$array) {
-        $i = 0;
-        foreach(array_keys($array) as $key) {
-            if(!array_key_exists($i,$array))
-            {
-                $array[$i] = $array[$key];
-                unset($array[$key]);
-            }
-            $i++;
-        }
-    }
-
-    // this searches the provided notesElement recursively to find the id and delete the subtree
-    // returns true if the id was found and deleted
-    private function deleteIdContent(&$parent, $key, &$notesElement,$id) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $id) {
-            unset($parent[$key]);
-            $this->renumberArrayKeys($parent);
-            return true;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as $childKey=>&$child) {
-                $returnValue = $this->deleteIdContent($notesElement['children'], $childKey, $child,$id);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        $db = $this->getConnection();
+        $db->query("UPDATE notes SET content='$editedContent' WHERE id = $id;");
+        // need error handling.
+        return true;
     }
 
     // returns true if the id was found and deleted. otherwise returns false. 
     // NOTE: delete content on the subjectId is not supported in this test implementation
     public function deleteContent($id) {
-        // get the content, and the walk the array to look for the provided id. if it exists, delete it and its subtree
-        $notesArray = $this->loadNotesArray();
-        
-        $returnValue = false;
-        // parent and key not used at this tier
-        if ( $this->deleteIdContent($notesArray, 0, $notesArray,$id) ) {
-            $returnValue = true;
-        }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue;
-    }
-
-    // this searches the provided notesElement recursively to find the parentId. Then add a new tag to the end. Give it a new random id and assign the newTag
-    // returns true if the parentId was found and the newTag was added
-    private function addTagInternal(&$notesElement,$parentId,$newTag) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $parentId) {
-            // get the current tag count
-            $newTagIndex = 0;
-            if(array_key_exists('tags',$notesElement) && count($notesElement['tags']) > 0) {
-                $newTagIndex = max(array_keys($notesElement['tags']))+1;
-            }
-            $notesElement['tags'][$newTagIndex]['id'] = $this->generateUniqueId();
-            $notesElement['tags'][$newTagIndex]['content'] = $newTag;
-            return true;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as &$child) {
-                $returnValue = $this->addTagInternal($child,$parentId,$newTag);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        $db = $this->getConnection();
+        $db->query("DELETE FROM notes WHERE id = $id;");
+        // need error handling.
+        return true;
     }
 
     // returns true if the id was found and the newTag was added 
     public function addTag($parentId, $newTag) {
-        // get the content. and then walk the array to look for the provided parentId. If it exists, add the newTag as the last tag. Give it a new id.
-        $notesArray = $this->loadNotesArray();        
-
-        $returnValue = false;
-        if ( $this->addTagInternal($notesArray,$parentId,$newTag) ) {
-                $returnValue = true;
-        }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue; 
-    }
-
-    // this searches the provided notesElement recursively to find the id and delete it
-    // returns true if the id was found and deleted
-    private function deleteTagInternal(&$notesElement,$parentId,$tagId) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $parentId) {
-            if(array_key_exists('tags',$notesElement)) {
-                // iterate the array and check all the ids
-                foreach($notesElement['tags'] as $key=>$tagHolder) {
-                    if($tagHolder['id'] == $tagId) {
-                        unset($notesElement['tags'][$key]);
-                        $this->renumberArrayKeys($notesElement['tags']);
-                        return true;
-                    }
-                }
-            } 
-            return false;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as $childKey=>&$child) {
-                $returnValue = $this->deleteTagInternal($child, $parentId, $tagId);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        $db = $this->getConnection();
+        $db->query("INSERT INTO tags(notes_id,content) VALUES ($parentId,'$newTag');");
+        return true;
     }
 
     // returns true if the id was found and deleted. otherwise returns false.
     public function deleteTag($parentId, $tagId) {
-        // get the content, and the walk the array to look for the provided id. if it exists, delete it 
-        $notesArray = $this->loadNotesArray();
-        
-        $returnValue = false;
-        if ( $this->deleteTagInternal($notesArray,$parentId, $tagId) ) {
-            $returnValue = true;
-        }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue;
-    }
-
-    // this searches the provided notesElement recursively to find the parentId. Then add a new media element to the end. Give it a new random id and assign the new media info
-    // returns true if the parentId was found and the new media was added
-    private function addMediaInternal(&$notesElement,$parentId,$newContent, $type, $description, $isPrintable) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $parentId) {
-            // get the current media count. include the type in the search. 
-            $newMediaIndex = 0;
-            if(array_key_exists('media',$notesElement) && count($notesElement['media']) > 0 && array_key_exists($type,$notesElement['media']) && count($notesElement['media'][$type]) > 0) {
-                $newMediaIndex = max(array_keys($notesElement['media'][$type]))+1;
-            }
-            $notesElement['media'][$type][$newMediaIndex]['id'] = $this->generateUniqueId();
-            $notesElement['media'][$type][$newMediaIndex]['content'] = $newContent;
-            $notesElement['media'][$type][$newMediaIndex]['description'] = $description;
-            $notesElement['media'][$type][$newMediaIndex]['isPrintable'] = $isPrintable;
-            return true;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as &$child) {
-                $returnValue = $this->addMediaInternal($child,$parentId,$newContent, $type, $description, $isPrintable);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        $db = $this->getConnection();
+        $db->query("DELETE FROM tags WHERE notes_id = $parentId and id = $tagId;");
+        return true;
     }
 
     // returns true if the id was found and the new media was added 
-    public function addMedia($parentId, $newContent, $type, $description, $isPrintable) {
-        // get the content. and then walk the array to look for the provided parentId. If it exists, add the new media as the last media entry. Give it a new id.
-        $notesArray = $this->loadNotesArray();        
-
-        $returnValue = false;
-        if ( $this->addMediaInternal($notesArray,$parentId,$newContent, $type, $description, $isPrintable) ) {
-            $returnValue = true;
+    public function addMedia($parentId, $newContent, $type, $description) {
+        $db = $this->getConnection();
+        if($description == null) {
+            $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', null, (SELECT id FROM media_types WHERE type = '$type'));");
+        } else {
+            $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', '$description', (SELECT id FROM media_types WHERE type = '$type'));");
         }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue; 
-    }
-
-    // this searches the provided notesElement recursively to find the id and delete it
-    // returns true if the id was found and deleted
-    private function deleteMediaInternal(&$notesElement,$parentId,$mediaId) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $parentId) {
-            if(array_key_exists('media',$notesElement)) {
-                // iterate the array and check all the ids
-                foreach($notesElement['media'] as $mediaTypeKey=>&$mediaTypeValues) {
-                    foreach($mediaTypeValues as $key=>$mediaHolder) {
-                        if($mediaHolder['id'] == $mediaId) {
-                            unset($mediaTypeValues[$key]);
-                            $this->renumberArrayKeys($mediaTypeValues);
-                            // check if the media type is now empty
-                            if( count($mediaTypeValues) == 0) {
-                                unset($notesElement['media'][$mediaTypeKey]);
-                            }
-                            return true;
-                        }
-                    }
-                }
-            } 
-            return false;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as $childKey=>&$child) {
-                $returnValue = $this->deleteMediaInternal($child, $parentId, $mediaId);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return true;
     }
 
     // returns true if the id was found and deleted. otherwise returns false.
     public function deleteMedia($parentId, $mediaId) {
-        // get the content, and the walk the array to look for the provided id. if it exists, delete it 
-        $notesArray = $this->loadNotesArray();
-        
-        $returnValue = false;
-        if ( $this->deleteMediaInternal($notesArray,$parentId, $mediaId) ) {
-                $returnValue = true;
-        }
-
-        $updatedContent = json_encode($notesArray);
-        $this->save($this->subjectId,$updatedContent);
-        return $returnValue;
+        $db = $this->getConnection();
+        $db->query("DELETE FROM media WHERE notes_id = $parentId and id = $mediaId;");
+        return true;
     }
 
 }
