@@ -127,33 +127,6 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
 
     }
 
-    private function generateUniqueId() {
-        return intval(1000000*microtime(true)); 
-    }
-
-    private function loadNotesArray() {
-        $notesContent = $this->getAugmentedNotes($this->subjectId);
-
-        $notesArray = json_decode($notesContent, true);
-        if(!$notesArray)
-        {
-            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
-        }
-        return $notesArray ;
-    }
-    
-    private function save($subject_id, $json)
-    {
-        //save the serialized array version into a file
-        $success = file_put_contents("{$this->baseDirectory}/{$subject_id}", serialize($json));
-      
-        //if saving was not successful, throw an exception
-        if( $success === false ) 
-        {
-            throw new Exception('Failed to save notes item');
-        }
-    }
-    
     public function getAugmentedNotes($subjectId) {
         if( file_exists("{$this->baseDirectory}/{$subjectId}") === false ) {
             throw new Exception('Subject ID is invalid');
@@ -163,67 +136,34 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             
         return $augmented_notes_json;
     }
-    
-    // this modifies the provided notesElement to fill in missing ids recursively
-    private function idAssigner(&$notesElement) {
-        // check if this tier has a "content" key and no "id" key. If so, create a unique id key.
-        if (array_key_exists('content',$notesElement) && !array_key_exists('id',$notesElement)) {
-            $notesElement['id'] = $this->generateUniqueId();
-        }
-        //iterate keys and recurse on any that are arrays 
-        foreach ($notesElement as $key=>&$value) {
-            if(is_array($value)) {
-                $this->idAssigner($value);
-            }
-        }
-    }
 
     public function setAugmentedNotes($subjectId, $newContent) {
-        // make sure all content has an id. Walk the entire tree. If a
-        // "content" key exists but no "id" key exists, add an "id" key. 
-        $notesArray = json_decode($newContent, true);
-        if(!$notesArray)
-        {
-            throw new Exception('Could not decode JSON. Check to ensure it matches the JSON spec, including looking for missing/extra commas or unmatched quotation marks.');
-        }
+        $data = json_decode($newContent);
+
+        $db = $this->getConnection();
+        $db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         
-        $this->idAssigner($notesArray);
+        // confirm the top-level is a subject id
+        $subject_found_query = $db->query("SELECT * FROM notes JOIN note_types ON notes.note_type_id = note_types.id WHERE notes.id = $subjectId AND note_types.name = 'Subject';");
+        $subject_found = $subject_found_query->rowCount();
+        echo "hi: $subject_found";
+        
 
-        $updatedContent = json_encode($notesArray);
-        $this->save($subjectId,$updatedContent);
-    }
-
-    // this searches the provided notesElement recursively to find the parentId. Then add a new child to the end. Give it a new random id and assign the newContent
-    // returns true if the parentId was found and the child was added
-    private function addChild(&$notesElement,$parentId,$newContent) {
-        // check if we've found the id of interest
-        if ($notesElement['id'] == $parentId) {
-            // get the current child count
-            $newChildIndex = 0;
-            if(array_key_exists('children',$notesElement) && count($notesElement['children']) > 0) {
-                $newChildIndex = max(array_keys($notesElement['children']))+1;
-            }
+        // set whole tree to have position of -1
             
-            $notesElement['children'][$newChildIndex]['id'] = $this->generateUniqueId();
-            $notesElement['children'][$newChildIndex]['content'] = $newContent;
-            return true;
-        }
-        // otherwise check the children, if any exist
-        if(array_key_exists('children',$notesElement)) {
-            foreach($notesElement['children'] as &$child) {
-                $returnValue = $this->addChild($child,$parentId,$newContent);
-                if ( $returnValue ) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        // update everything from input. if any unknown id is introduced, rollback
+
+        // delete everything at position -1
+
+
+        $db->query("COMMIT;");
+        return true;
     }
 
     // returns true if the id was found and the newContent was added as a child
     public function addContent($parentId,$newContent) {
         $db = $this->getConnection();
-        $db->query("LOCK TABLES notes WRITE, note_types AS note_types_one READ, note_types AS note_types_two READ;");
+        $db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $note_type_id_query = $db->query("select id from note_types AS note_types_one where note_types_one.depth = (select (note_types_two.depth+1) as new_depth from notes JOIN note_types AS note_types_two ON notes.note_type_id = note_types_two.id where notes.id = $parentId);");
         $note_type_id_result_set = $note_type_id_query->fetch();
         $note_type_id = $note_type_id_result_set['id'];
@@ -232,7 +172,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $position = $position_result_set['position'];
         $insert = $db->query("INSERT INTO notes (content,position,note_type_id,parent_notes_id,language_id) VALUES ('$newContent',$position,$note_type_id,$parentId,$this->englishLanguageId);");
 
-        $db->query("UNLOCK TABLES;");
+        $db->query("COMMIT;");
         return true;
     }
 

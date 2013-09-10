@@ -8,6 +8,7 @@ $sdk->addContent($projectId, "Form 1");
 $sdk->addContent($projectId, "Form 2");
 $sdk->addContent($projectId, "Form 3");
 $sdk->addContent($projectId, "Form 4");
+$sdk->addContent(2, "Physics");
 $sdk->editContent($projectId+1,"Form 11");
 $sdk->editContent($projectId+2,"Form 1");
 $sdk->deleteContent($projectId+3);
@@ -24,6 +25,9 @@ $sdk->addMedia(1,"media4","YouTube","media4_desc");
 $sdk->addMedia(1,"media5","Youtube","media5_desc");
 $sdk->deleteMedia(1,4);
 $sdk->deleteMedia(2,5);
+
+$samplePhysicsContent = file_get_contents("input/samplePhysicsNotes");
+$sdk->setAugmentedNotes(6,$samplePhysicsContent);
 exit;
 
 $physicsSubjectId = 1;
