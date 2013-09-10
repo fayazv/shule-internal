@@ -26,17 +26,20 @@ class Notes extends REST_Controller
         }
     }
 
-    function getAugmentedNotes_get($inputJson)
+    function getAugmentedNotes_post()
     {
-    	$object = json_decode($inputJson, true);
+    	
+	$object = json_decode($this->input->post("inputJson"), true);
+	
         if (array_key_exists("id", $object))
         {
             $subjectId = $object["id"];
+	    
         }
-        validateInt($subjectId);
+        //validateInt($subjectId);
 
         $augmentedNotesObject = $this->Notes_m->getAugmentedNotes($subjectId);
-	    $this->response($augmentedNotesObject);	
+	$this->response($augmentedNotesObject);	
     }
 
     function setAugmentedNotes($inputJson)
