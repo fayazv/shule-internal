@@ -23,7 +23,7 @@ class Notes_m extends CI_Model {
 
     function addContent($parentId,$newContent)
     {
-    	return "TODO: implement this method";
+    	return $parentId + $newContent;
     }
    
 
