@@ -1,0 +1,103 @@
+{
+    "id": 6,
+    "content": "Physics",
+    "children":
+    [
+        { 
+            "content":"Mechanics",
+            "children":
+            [
+                {
+                    "content":"forces",
+                    "children":
+                    [
+                        {
+                            "content": "gravity"
+                        },
+                        {
+                            "content": "friction",
+                            "tags":
+                            [
+                                {
+                                    "content": "mu"
+                                },
+                                {
+                                    "content": "sliding"
+                                },
+                                {
+                                    "content": "static"
+                                }
+                            ]
+                        },
+                        {
+                            "content": "drag",
+                            "media":
+                            {
+                                "youtube":
+                                [
+                                    {
+                                        "content": "www.youtube.com/cardriving",
+                                        "description": "A demonstration of drag slowing down a car",
+					"isPrintable": false
+                                    },
+                                    {
+                                        "content": "www.youtube.com/skydiving",
+                                        "description": "A demonstration of drag slowing down a parachute",
+					"isPrintable": false
+                                    }
+                                ]                                
+                            }
+                        }
+                    ]
+                },
+                {
+                    "content":"energy",
+                    "children":
+                    [
+                        {
+                            "content": "potential",
+                            "children":
+                            [
+                                {
+                                    "content": "Potential energy is U = mgh. The g is acceleration due to gravity."
+                                },
+                                {
+                                    "content": "Someone standing on the tenth floor has more potential energy than someone standing on the second floor."
+                                }
+                            ],
+                            "media":
+                            {
+                                "image":
+                                [
+                                    {
+                                        "content": "www.website.com/boulder.png",
+                                        "description": "The boulder at the top of the hill has a lot of potential energy",
+					"isPrintable": true
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "content": "kinetic"
+                        }                        
+                    ]
+                }
+            ],
+            "tags":
+            [
+                {
+                    "content": "Newton"
+                },
+                {
+                    "content": "Quantum"
+                }
+            ]
+        },
+        { 
+            "content":"Electricity and Magnetism",
+            "children":
+            [
+            ]
+        }
+    ] 
+}

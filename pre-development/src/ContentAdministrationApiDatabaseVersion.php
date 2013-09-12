@@ -149,17 +149,18 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 // TODO ldoshi if any insert fails, error up and out to abort the operation
             }
 
+            // TODO ldoshi -- SUPPORT FOR Tags and Media!!
             $content = $child['content'];
             if(array_key_exists('id',$child)) {
                 // run an update statement
                 $childId = $child['id'];
-                $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
+                $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[$depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
                 $db->query($update);
                 unset($idArray[$childId]);
                 $nextParentId = $child['id'];
             } else {
                 // run an insert statement
-                $insert = "INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ('$content',$position,$depthToNoteTypeMapping[depth],$parentId,$languageId);\n";
+                $insert = "INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ('$content',$position,$depthToNoteTypeMapping[$depth],$parentId,$languageId);\n";
                 $db->query($insert);
                 
                 $lastInsertResultSet = $db->query("select last_insert_id() as last_insert_id")->fetch();
@@ -200,10 +201,13 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         // build a map of depth to note_type id
         $result = $db->query("SELECT depth,id from note_types");
         $maxDepth = 0;
+        $depthToNoteTypeMapping = array();
         foreach($result as $value) {
-            $depthToNoteTypeMapping[$value['depth']] = $value['id'];
-            if($value['depth'] > $maxDepth){
-                $maxDepth = $value['depth'];
+            $currentDepth= $value['depth'];
+            $currentId= $value['id'];
+            $depthToNoteTypeMapping[$currentDepth] = $currentId;
+            if($currentDepth > $maxDepth){
+                $maxDepth = $currentDepth;
             }
         }
         
@@ -229,14 +233,14 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $notesArray = json_decode($newContent, true);
        
         // run updates for the top level subject
+        unset($idArray[$subjectId]);
 
         // if there are children, do this too. 
         if(array_key_exists('children',$notesArray)) {
-            $this->setAugmentedNotesHelper($db,$notesArray['children'],$subjectDepth, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+            $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
         }
 
         // delete all ids that remain in idArray
-        var_dump($idArray);
         $deleteList = "";
         foreach($idArray as $key=>$value) {
             $deleteList .= "$key,";
@@ -244,7 +248,6 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         // chop final comma
         $deleteList = substr($deleteList, 0, -1);
         $deleteQuery = "DELETE FROM notes WHERE id IN ( $deleteList );";
-        echo $deleteQuery;
         $db->query($deleteQuery);
         
         $db->query("COMMIT;");
@@ -266,8 +269,6 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $db->query("COMMIT;");
         return true;
     }
-
-//    todo ldoshi: do edit, delete, add tag, add media... now fk should be enforced so dont need to check for ids existing.
 
     // returns true if the id was found and updated. otherwise returns false. 
     public function editContent($id,$editedContent) {

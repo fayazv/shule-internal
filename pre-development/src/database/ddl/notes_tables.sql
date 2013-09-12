@@ -2,10 +2,7 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
-DROP SCHEMA IF EXISTS `shuledirect` ;
-CREATE SCHEMA IF NOT EXISTS `shuledirect` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
 SHOW WARNINGS;
-USE `shuledirect` ;
 
 -- -----------------------------------------------------
 -- Table `shuledirect`.`note_types`
@@ -15,9 +12,10 @@ DROP TABLE IF EXISTS `shuledirect`.`note_types` ;
 SHOW WARNINGS;
 CREATE  TABLE IF NOT EXISTS `shuledirect`.`note_types` (
   `id` INT NOT NULL AUTO_INCREMENT ,
-  `name` VARCHAR(20) NOT NULL ,
+  `name` VARCHAR(63) NOT NULL ,
   `depth` INT NOT NULL ,
-  PRIMARY KEY (`id`) )
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -31,7 +29,8 @@ SHOW WARNINGS;
 CREATE  TABLE IF NOT EXISTS `shuledirect`.`languages` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `language` VARCHAR(100) NOT NULL ,
-  PRIMARY KEY (`id`) )
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -53,21 +52,22 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`notes` (
   INDEX `note_types_idx` (`note_type_id` ASC) ,
   INDEX `fk_notes_parent_notes_id` (`parent_notes_id` ASC) ,
   INDEX `fk_notes_language_id` (`language_id` ASC) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_notes_note_types_id`
     FOREIGN KEY (`note_type_id` )
     REFERENCES `shuledirect`.`note_types` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_notes_parent_notes_id`
     FOREIGN KEY (`parent_notes_id` )
     REFERENCES `shuledirect`.`notes` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_notes_language_id`
     FOREIGN KEY (`language_id` )
     REFERENCES `shuledirect`.`languages` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -84,11 +84,12 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`tags` (
   `content` VARCHAR(255) NOT NULL ,
   PRIMARY KEY (`id`) ,
   INDEX `notes_id_idx` (`notes_id` ASC) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_tags_notes_id`
     FOREIGN KEY (`notes_id` )
     REFERENCES `shuledirect`.`notes` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -103,7 +104,8 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`media_types` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `type` VARCHAR(100) NOT NULL ,
   `is_printable` TINYINT(1) NOT NULL ,
-  PRIMARY KEY (`id`) )
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -123,16 +125,17 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`media` (
   PRIMARY KEY (`id`) ,
   INDEX `notes_id_idx` (`notes_id` ASC) ,
   INDEX `media_type_id_idx` (`media_type_id` ASC) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_media_notes_id`
     FOREIGN KEY (`notes_id` )
     REFERENCES `shuledirect`.`notes` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_media_media_type_id`
     FOREIGN KEY (`media_type_id` )
     REFERENCES `shuledirect`.`media_types` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -160,7 +163,8 @@ SHOW WARNINGS;
 CREATE  TABLE IF NOT EXISTS `shuledirect`.`question_difficulties` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `difficulty` VARCHAR(20) NOT NULL ,
-  PRIMARY KEY (`id`) )
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -174,7 +178,8 @@ SHOW WARNINGS;
 CREATE  TABLE IF NOT EXISTS `shuledirect`.`question_sources` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `name` VARCHAR(100) NOT NULL ,
-  PRIMARY KEY (`id`) )
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -189,7 +194,7 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`questions` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `notes_id` INT NOT NULL ,
   `default_question` VARCHAR(1023) NOT NULL ,
-  `answer` VARCHAR(255) NOT NULL ,
+  `answer` VARCHAR(1023) NOT NULL ,
   `override_question` VARCHAR(1023) NULL ,
   `question_type_id` INT NOT NULL ,
   `question_difficulty_id` INT NOT NULL ,
@@ -205,31 +210,32 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`questions` (
   INDEX `question_source_id_idx` (`question_source_id` ASC) ,
   PRIMARY KEY (`id`) ,
   INDEX `fk_questions_language_id` (`language_id` ASC) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_questions_question_type_id`
     FOREIGN KEY (`question_type_id` )
     REFERENCES `shuledirect`.`question_types` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_questions_notes_id`
     FOREIGN KEY (`notes_id` )
     REFERENCES `shuledirect`.`notes` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_questions_question_difficulty_id`
     FOREIGN KEY (`question_difficulty_id` )
     REFERENCES `shuledirect`.`question_difficulties` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_questions_question_source_id`
     FOREIGN KEY (`question_source_id` )
     REFERENCES `shuledirect`.`question_sources` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_questions_language_id`
     FOREIGN KEY (`language_id` )
     REFERENCES `shuledirect`.`languages` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -247,16 +253,17 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`question_media` (
   `description` VARCHAR(255) NULL ,
   `media_type_id` INT NOT NULL ,
   PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_question_media_question_id`
     FOREIGN KEY (`question_id` )
     REFERENCES `shuledirect`.`questions` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_question_media_media_type_id`
     FOREIGN KEY (`media_type_id` )
     REFERENCES `shuledirect`.`media_types` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -275,11 +282,12 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`question_choices` (
   `default_choice` VARCHAR(255) NOT NULL ,
   `override_choice` VARCHAR(255) NOT NULL ,
   PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_question_choices_question_id`
     FOREIGN KEY (`question_id` )
     REFERENCES `shuledirect`.`questions` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -296,11 +304,12 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`exams` (
   `notes_id` INT NOT NULL ,
   PRIMARY KEY (`id`) ,
   INDEX `fk_exams_notes_id` (`notes_id` ASC) ,
+  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   CONSTRAINT `fk_exams_notes_id`
     FOREIGN KEY (`notes_id` )
     REFERENCES `shuledirect`.`notes` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -320,13 +329,13 @@ CREATE  TABLE IF NOT EXISTS `shuledirect`.`exam_questions` (
   CONSTRAINT `fk_exam_questions_exam_id`
     FOREIGN KEY (`exam_id` )
     REFERENCES `shuledirect`.`exams` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT,
   CONSTRAINT `fk_exam_questions_question_id`
     FOREIGN KEY (`question_id` )
     REFERENCES `shuledirect`.`questions` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
