@@ -137,6 +137,39 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return $augmented_notes_json;
     }
 
+    private function setAugmentedNotesHelper(&$notesChildren, &$depthToNoteTypeMapping, &$idArray, $depth, $parentId, $languageId) {
+        // iterate the children. insert each one incrementing the position each time. also recurse to their children
+        $position = 0;
+        foreach($notesChildren as &$child) {
+            // check if there is an id, ie is this new or does it already exist?
+            $nextParentId = 0;         
+            if(!array_key_exists('content',$child)) {
+                // TODO ldoshi -- throw an error. this is malformed input. 
+            }
+
+            $content = $child['content'];
+            if(array_key_exists('id',$child)) {
+                // run an update statement
+                $childId = $child['id'];
+                $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
+                echo $update;
+                unset($idArray[$childId]);
+                $nextParentId = $child['id'];
+            } else {
+                // run an insert statement
+                $insert = "INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ('$content',$position,$depthToNoteTypeMapping[depth],$parentId,$languageId);\n";
+                echo $insert;
+                $nextParentId = 0; // last insert id from the database as this new content is now a parent
+            }
+            
+            // make sure the children are also handled  
+            if(array_key_exists('children',$child)) {
+                $this->setAugmentedNotesHelper($child['children'],$depthToNoteTypeMapping,$idArray,$depth+1,$nextParentId,$languageId);
+            } 
+            $position++;
+        }
+    }
+
     public function setAugmentedNotes($subjectId, $newContent) {
         $data = json_decode($newContent);
 
@@ -144,17 +177,60 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         
         // confirm the top-level is a subject id
-        $subject_found_query = $db->query("SELECT * FROM notes JOIN note_types ON notes.note_type_id = note_types.id WHERE notes.id = $subjectId AND note_types.name = 'Subject';");
+        $subject_found_query = $db->query("SELECT depth FROM notes JOIN note_types ON notes.note_type_id = note_types.id WHERE notes.id = $subjectId AND note_types.name = 'Subject';");
         $subject_found = $subject_found_query->rowCount();
-        echo "hi: $subject_found";
+        if($subject_found == 0 )
+        {
+            echo "error subject not found";
+            return;
+        }
+        else if($subject_found > 1)
+        {
+            echo "error data integrity violation";
+            return;
+        }
+        $subjectDepthResultSet = $subject_found_query->fetch();
+        $subjectDepth = $subjectDepthResultSet['depth'];
         
+        // build a map of depth to note_type id
+        $result = $db->query("SELECT depth,id from note_types");
+        $maxDepth = 0;
+        foreach($result as $value) {
+            $depthToNoteTypeMapping[$value['depth']] = $value['id'];
+            if($value['depth'] > $maxDepth){
+                $maxDepth = $value['depth'];
+            }
+        }
+        
+        // build a list of ids that are there now so that we can update the ones still found here and delete the rest. 
+        // just walk the map and do the updates/inserts. eg, need last_insert_id for cases when content is new.
+        
+        // build list of ids from the subject using the $subjectDepth and $maxDepth to know how many self joins are required.
+        $idQuery = "SELECT DISTINCT notes.id FROM notes WHERE parent_notes_id = $subjectId OR id = $subjectId";
+        for($i=0;$i< ($maxDepth - $subjectDepth) - 1;$i++)
+        {
+            $idQuery = "SELECT DISTINCT notes.id FROM notes JOIN ( $idQuery ) subquery$i on subquery$i.id = notes.parent_notes_id OR subquery$i.id = notes.id";
+        }
 
-        // set whole tree to have position of -1
-            
-        // update everything from input. if any unknown id is introduced, rollback
+        $idQuery .= ";";
+        
+        // build an array for the ids
+        $idArray = array();
+        $idQueryResultSet = $db->query($idQuery);
+        foreach($idQueryResultSet as $value){
+            $idArray[$value['id']] = 1;
+        }
 
-        // delete everything at position -1
+        $notesArray = json_decode($newContent, true);
+       
+        // run updates for the top level subject
 
+        // if there are children, do this too. 
+        if(array_key_exists('children',$notesArray)) {
+            $this->setAugmentedNotesHelper($notesArray['children'],$subjectDepth, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+        }
+
+        // delete all ids that remain in idArray
 
         $db->query("COMMIT;");
         return true;
