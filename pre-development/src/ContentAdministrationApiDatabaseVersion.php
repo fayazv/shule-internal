@@ -137,7 +137,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return $augmented_notes_json;
     }
 
-    private function setAugmentedNotesHelper(&$notesChildren, &$depthToNoteTypeMapping, &$idArray, $depth, $parentId, $languageId) {
+    private function setAugmentedNotesHelper(&$db,&$notesChildren, &$depthToNoteTypeMapping, &$idArray, $depth, $parentId, $languageId) {
         // iterate the children. insert each one incrementing the position each time. also recurse to their children
         $position = 0;
         foreach($notesChildren as &$child) {
@@ -145,6 +145,8 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             $nextParentId = 0;         
             if(!array_key_exists('content',$child)) {
                 // TODO ldoshi -- throw an error. this is malformed input. 
+
+                // TODO ldoshi if any insert fails, error up and out to abort the operation
             }
 
             $content = $child['content'];
@@ -152,19 +154,22 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 // run an update statement
                 $childId = $child['id'];
                 $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
-                echo $update;
+                $db->query($update);
                 unset($idArray[$childId]);
                 $nextParentId = $child['id'];
             } else {
                 // run an insert statement
                 $insert = "INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ('$content',$position,$depthToNoteTypeMapping[depth],$parentId,$languageId);\n";
-                echo $insert;
-                $nextParentId = 0; // last insert id from the database as this new content is now a parent
+                $db->query($insert);
+                
+                $lastInsertResultSet = $db->query("select last_insert_id() as last_insert_id")->fetch();
+                // last insert id from the database as this new content is now a parent        
+                $nextParentId = $lastInsertResultSet['last_insert_id'];
             }
             
             // make sure the children are also handled  
             if(array_key_exists('children',$child)) {
-                $this->setAugmentedNotesHelper($child['children'],$depthToNoteTypeMapping,$idArray,$depth+1,$nextParentId,$languageId);
+                $this->setAugmentedNotesHelper($db, $child['children'],$depthToNoteTypeMapping,$idArray,$depth+1,$nextParentId,$languageId);
             } 
             $position++;
         }
@@ -220,18 +225,28 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         foreach($idQueryResultSet as $value){
             $idArray[$value['id']] = 1;
         }
-
+        
         $notesArray = json_decode($newContent, true);
        
         // run updates for the top level subject
 
         // if there are children, do this too. 
         if(array_key_exists('children',$notesArray)) {
-            $this->setAugmentedNotesHelper($notesArray['children'],$subjectDepth, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+            $this->setAugmentedNotesHelper($db,$notesArray['children'],$subjectDepth, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
         }
 
         // delete all ids that remain in idArray
-
+        var_dump($idArray);
+        $deleteList = "";
+        foreach($idArray as $key=>$value) {
+            $deleteList .= "$key,";
+        }
+        // chop final comma
+        $deleteList = substr($deleteList, 0, -1);
+        $deleteQuery = "DELETE FROM notes WHERE id IN ( $deleteList );";
+        echo $deleteQuery;
+        $db->query($deleteQuery);
+        
         $db->query("COMMIT;");
         return true;
     }
