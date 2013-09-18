@@ -33,7 +33,7 @@
                             "content": "drag",
                             "media":
                             {
-                                "youtube":
+                                "YouTube":
                                 [
                                     {
                                         "content": "www.youtube.com/cardriving",
@@ -67,7 +67,7 @@
                             ],
                             "media":
                             {
-                                "image":
+                                "Image":
                                 [
                                     {
                                         "content": "www.website.com/boulder.png",
