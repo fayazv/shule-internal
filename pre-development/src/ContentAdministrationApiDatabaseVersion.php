@@ -38,16 +38,16 @@ interface ContentAdministrationSDK
      * TODO ldoshi: this will need to accept subject in admin mode only. 
      * Unrecognized: return an empty object
      */
-    public function getAugmentedNotes($subjectId);
+    public function getAugmentedNotes($id);
     
     /**
      * Provide a new syllabus and notes content in JSON format, including media and tags. 
      * This is meant to go with a rich user-interface for editing and generating content.
      *
-     * Expected ids: subjectId
+     * Expected ids: subjectId (must be provided in the top level of newContent)
      * Unrecognized: no-op
      */
-    public function setAugmentedNotes($subjectId, $newContent);
+    public function setAugmentedNotes($newContent);
 
     /**
      * Add the new content under the id provided. 
@@ -127,14 +127,38 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
 
     }
 
-    public function getAugmentedNotes($subjectId) {
-        // verify subjectId
+    public function getAugmentedNotes($id) {
 
+        $db = $this->getConnection();
+        $db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
+        
+        // make sure the id exists in the notes table and is the subject level or deeper
+        $idDepthQuery = $db->query("SELECT depth,(SELECT MAX(depth) FROM note_types) as max_depth FROM notes JOIN note_types ON notes.note_type_id = note_types.id WHERE notes.id = $id AND depth >= (SELECT depth FROM note_types WHERE name = 'Subject');");
+        $idFound = $idDepthQuery->rowCount();
+        if($idFound == 0 ) {
+            echo "id not found or is not at a level of Subject or lower";
+            return;
+        }
+        else if($idFound > 1) {
+            echo "error data integrity violation";
+            return;
+        }
+        
+        $idDepthResultSet = $idDepthQuery->fetch();
+        $idDepth = $idDepthResultSet['depth'];
+        $maxDepth = $idDepthResultSet['max_depth'];
 
+        // build a query to capture all the content.
+        
+        
 
+        // convert to JSON to return
+
+        
+        $db->query("ROLLBACK;");
     }
 
-    private function setAugmentedNotesHelper(&$db,&$notesChildren, &$depthToNoteTypeMapping, &$idArray, $depth, $parentId, $languageId) {
+    private function setAugmentedNotesHelper(&$db,&$notesChildren, &$depthToNoteTypeMapping, &$idsToRemove, $depth, $parentId, $languageId) {
         // iterate the children. insert each one incrementing the position each time. also recurse to their children
         $position = 0;
         foreach($notesChildren as &$child) {
@@ -146,16 +170,14 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 // TODO ldoshi if any insert fails, error up and out to abort the operation
             }
 
-            // TODO ldoshi -- SUPPORT FOR Tags and Media!!
             $content = $child['content'];
-            
             $idExists = array_key_exists('id',$child);
             if($idExists) {
                 // run an update statement
                 $childId = $child['id'];
                 $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[$depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
                 $db->query($update);
-                unset($idArray[$childId]);
+                unset($idsToRemove[$childId]);
                 $nextParentId = $child['id'];
             } else {
                 // run an insert statement
@@ -209,14 +231,20 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
 
             // make sure the children are also handled  
             if(array_key_exists('children',$child)) {
-                $this->setAugmentedNotesHelper($db, $child['children'],$depthToNoteTypeMapping,$idArray,$depth+1,$nextParentId,$languageId);
+                $this->setAugmentedNotesHelper($db, $child['children'],$depthToNoteTypeMapping,$idsToRemove,$depth+1,$nextParentId,$languageId);
             } 
             $position++;
         }
     }
 
-    public function setAugmentedNotes($subjectId, $newContent) {
-        $data = json_decode($newContent);
+    public function setAugmentedNotes($newContent) {
+        $notesArray = json_decode($newContent, true);
+
+        if(!array_key_exists('id',$notesArray)) {
+            echo "no id provided at top level of content";
+            return;
+        }
+        $subjectId = $notesArray['id'];
 
         $db = $this->getConnection();
         $db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
@@ -262,28 +290,30 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
 
         $idQuery .= ";";
         
-        // build an array for the ids
-        $idArray = array();
+        // build an array for the ids. any ids left in the array when we're
+        // done will be deleted.
+        $idsToRemove = array();
         $idQueryResultSet = $db->query($idQuery);
         foreach($idQueryResultSet as $value){
-            $idArray[$value['id']] = 1;
+            $idsToRemove[$value['id']] = 1;
         }
-        
-        $notesArray = json_decode($newContent, true);
-       
+ 
         // run updates for the top level subject
-        unset($idArray[$subjectId]);
-
-        // TODO ldoshi -- update the subject level 
+        // update the content for the subject if necessary
+        if(array_key_exists('content',$notesArray)) {
+            $this->editContentInternal($subjectId,$notesArray['content'],$db);        
+        }
+        // remove from the array of ids
+        unset($idsToRemove[$subjectId]);
 
         // if there are children, do this too. 
         if(array_key_exists('children',$notesArray)) {
-            $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+            $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idsToRemove, $subjectDepth+1, $subjectId, $this->englishLanguageId);
         }
 
-        // delete all ids that remain in idArray
+        // delete all ids that remain in idsToRemove
         $deleteList = "";
-        foreach($idArray as $key=>$value) {
+        foreach($idsToRemove as $key=>$value) {
             $deleteList .= "$key,";
         }
         // chop final comma
@@ -311,12 +341,17 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return true;
     }
 
-    // returns true if the id was found and updated. otherwise returns false. 
-    public function editContent($id,$editedContent) {
-        $db = $this->getConnection();
+    // this should be temporary to help manage db connection stuff. code
+    // igniter version should not need this.
+    private function editContentInternal($id,$editedContent,$db) {
         $db->query("UPDATE notes SET content='$editedContent' WHERE id = $id;");
         // need error handling.
         return true;
+    }
+    // returns true if the id was found and updated. otherwise returns false. 
+    public function editContent($id,$editedContent) {
+        $db = $this->getConnection();
+        return $this->editContentInternal($id,$editedContent,$db);
     }
 
     // returns true if the id was found and deleted. otherwise returns false. 
@@ -332,13 +367,13 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
     // igniter version should not need this.
     private function addTagInternal($parentId, $newTag, $db) {
         $db->query("INSERT INTO tags(notes_id,content) VALUES ($parentId,'$newTag');");
+        return true;
     }
 
     // returns true if the id was found and the newTag was added 
     public function addTag($parentId, $newTag) {
         $db = $this->getConnection(); 
-        $this->addTagInternal($parentId,$newTag,$db);
-        return true;
+        return $this->addTagInternal($parentId,$newTag,$db);
     }
 
     // returns true if the id was found and deleted. otherwise returns false.
@@ -362,13 +397,13 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         } else {
             $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', '$description', (SELECT id FROM media_types WHERE type = '$type'));");
         }
+        return true;
     }
 
     // returns true if the id was found and the new media was added 
     public function addMedia($parentId, $newContent, $type, $description) {
         $db = $this->getConnection();
-        $this->addMediaInternal($parentId,$newContent,$type,$description,$db);
-        return true;
+        return $this->addMediaInternal($parentId,$newContent,$type,$description,$db);
     }
 
     // returns true if the id was found and deleted. otherwise returns false.
