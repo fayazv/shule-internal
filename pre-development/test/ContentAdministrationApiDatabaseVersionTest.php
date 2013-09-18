@@ -27,7 +27,7 @@ $sdk->deleteMedia(1,4);
 $sdk->deleteMedia(2,5);*/
 
 $samplePhysicsContent = file_get_contents("input/samplePhysicsNotesAsAllNewContent");
-$sdk->setAugmentedNotes(6,$samplePhysicsContent);
+$sdk->setAugmentedNotes($samplePhysicsContent);
 exit;
 
 $physicsSubjectId = 1;
