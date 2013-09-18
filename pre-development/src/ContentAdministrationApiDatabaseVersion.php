@@ -128,13 +128,10 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
     }
 
     public function getAugmentedNotes($subjectId) {
-        if( file_exists("{$this->baseDirectory}/{$subjectId}") === false ) {
-            throw new Exception('Subject ID is invalid');
-        }
-        $augmented_notes_serialized = file_get_contents("{$this->baseDirectory}/{$subjectId}");
-        $augmented_notes_json = unserialize($augmented_notes_serialized);
-            
-        return $augmented_notes_json;
+        // verify subjectId
+
+
+
     }
 
     private function setAugmentedNotesHelper(&$db,&$notesChildren, &$depthToNoteTypeMapping, &$idArray, $depth, $parentId, $languageId) {
@@ -151,7 +148,9 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
 
             // TODO ldoshi -- SUPPORT FOR Tags and Media!!
             $content = $child['content'];
-            if(array_key_exists('id',$child)) {
+            
+            $idExists = array_key_exists('id',$child);
+            if($idExists) {
                 // run an update statement
                 $childId = $child['id'];
                 $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[$depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
@@ -168,6 +167,46 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 $nextParentId = $lastInsertResultSet['last_insert_id'];
             }
             
+            // handle tags separately for clarity
+            // 1. delete all existing tags (only happens if idExists)
+            // 2. add in all the new tags 
+            
+            if($idExists) {
+                $this->deleteAllTags($nextParentId, $db);
+            }
+            if(array_key_exists('tags',$child))
+            {
+                foreach($child['tags'] as $tag) {
+                    // skip tag if the content field is missing 
+                    if(array_key_exists('content',$tag)) {
+                        $this->addTagInternal($nextParentId,$tag['content'],$db);
+                    }
+                }
+            }
+
+            // handle media separately for clarity. similar to tags. 
+            // 1. delete all existing media (only happens if idExists)
+            // 2. add in all the new media
+            if($idExists) {
+                $this->deleteAllMedia($nextParentId,$db);
+            }
+            if(array_key_exists('media',$child)) { 
+                // media is further subdivided by type
+                foreach($child['media'] as $mediaType=>$mediaTypeArray) {
+                    foreach($mediaTypeArray as $mediaEntry) {
+                        // skip if the content field is missing
+                        if(array_key_exists('content',$mediaEntry)) {
+                            $description = null;
+                            // check if there is a description (optional)
+                            if(array_key_exists('description',$mediaEntry)) {
+                                $description = $mediaEntry['description'];
+                            }
+                            $this->addMediaInternal($nextParentId,$mediaEntry['content'],$mediaType,$description,$db);
+                        }
+                    }
+                }
+            }
+
             // make sure the children are also handled  
             if(array_key_exists('children',$child)) {
                 $this->setAugmentedNotesHelper($db, $child['children'],$depthToNoteTypeMapping,$idArray,$depth+1,$nextParentId,$languageId);
@@ -235,6 +274,8 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         // run updates for the top level subject
         unset($idArray[$subjectId]);
 
+        // TODO ldoshi -- update the subject level 
+
         // if there are children, do this too. 
         if(array_key_exists('children',$notesArray)) {
             $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idArray, $subjectDepth+1, $subjectId, $this->englishLanguageId);
@@ -287,10 +328,16 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return true;
     }
 
+    // this should be temporary to help manage db connection stuff. code
+    // igniter version should not need this.
+    private function addTagInternal($parentId, $newTag, $db) {
+        $db->query("INSERT INTO tags(notes_id,content) VALUES ($parentId,'$newTag');");
+    }
+
     // returns true if the id was found and the newTag was added 
     public function addTag($parentId, $newTag) {
-        $db = $this->getConnection();
-        $db->query("INSERT INTO tags(notes_id,content) VALUES ($parentId,'$newTag');");
+        $db = $this->getConnection(); 
+        $this->addTagInternal($parentId,$newTag,$db);
         return true;
     }
 
@@ -301,14 +348,26 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         return true;
     }
 
-    // returns true if the id was found and the new media was added 
-    public function addMedia($parentId, $newContent, $type, $description) {
-        $db = $this->getConnection();
+    // the db arg is temporary until we integrate with Code Igniter
+    private function deleteAllTags($parentId, $db) {
+        $db->query("DELETE FROM tags WHERE notes_id = $parentId;");
+        return true;
+    }
+
+    // this should be temporary to help manage db connection stuff. code
+    // igniter version should not need this.
+    private function addMediaInternal($parentId, $newContent, $type, $description, $db) {
         if($description == null) {
             $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', null, (SELECT id FROM media_types WHERE type = '$type'));");
         } else {
             $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', '$description', (SELECT id FROM media_types WHERE type = '$type'));");
         }
+    }
+
+    // returns true if the id was found and the new media was added 
+    public function addMedia($parentId, $newContent, $type, $description) {
+        $db = $this->getConnection();
+        $this->addMediaInternal($parentId,$newContent,$type,$description,$db);
         return true;
     }
 
@@ -316,6 +375,12 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
     public function deleteMedia($parentId, $mediaId) {
         $db = $this->getConnection();
         $db->query("DELETE FROM media WHERE notes_id = $parentId and id = $mediaId;");
+        return true;
+    }
+
+    // the db arg is temporary until we integrate with code igniter
+    private function deleteAllMedia($parent,$db) {
+        $db->query("DELETE FROM media WHERE notes_id = $parentId;");
         return true;
     }
 
