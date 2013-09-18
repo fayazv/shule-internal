@@ -45,7 +45,11 @@
 | the active record class
 */
 
-$active_group = 'default';
+$env_used = 'default'; //name of your development setting
+if(defined('CIUnit_Version')){
+  $env_used .= '_test';
+}
+$active_group = $env_used;
 $active_record = TRUE;
 
 $db['default']['hostname'] = 'localhost';

@@ -35,25 +35,25 @@ class Notes extends REST_Controller
         {
             $subjectId = $object["id"];
 	    
+        } else {
+            $this->response("You suck at life");
         }
         //validateInt($subjectId);
-
         $augmentedNotesObject = $this->Notes_m->getAugmentedNotes($subjectId);
-	$this->response($augmentedNotesObject);	
+	    $this->response($augmentedNotesObject);	
     }
 
-    function setAugmentedNotes($inputJson)
+    function setAugmentedNotes_post()
     {
-    	$object = json_decode($inputJson, true);
+    	$object = json_decode($this->input->post("inputJson"), true);
         if (array_key_exists("id", $object) && array_key_exists("content", $object))
         {
             $subjectId = $object["id"];
             $newContent = $object["content"];
         }
 
-        validateInt($subjectId);
+        //validateInt($subjectId);
         $success = $this->Notes_m->setAugmentedNotes($subjectId, $newContent); 
-        //success is a boolean
         $this->response($success);
     }
 
