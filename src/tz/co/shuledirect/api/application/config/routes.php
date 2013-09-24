@@ -40,6 +40,7 @@
 
 $route['default_controller'] = "welcome";
 $route['404_override'] = '';
+//$route['qunit'] = "qunit/index"
 
 
 /* End of file routes.php */
