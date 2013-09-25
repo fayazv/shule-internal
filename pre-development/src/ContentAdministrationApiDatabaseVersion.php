@@ -149,13 +149,60 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $maxDepth = $idDepthResultSet['max_depth'];
 
         // build a query to capture all the content.
-        
-        
+        $contentQuery = "select id as parent_id_0,content,position as position_0,note_type_id,parent_notes_id from notes where id = $id  group by notes.id";
+        for($i=0;$i< ($maxDepth - $idDepth)  ;$i++) {
+            $previousParentIds = "";
+            for($j=0;$j<($i+1);$j++) {
+                $previousParentIds = "$previousParentIds subquery$i.parent_id_$j,subquery$i.position_$j,";
+            }
+            $contentQuery = "select $previousParentIds notes.id as parent_id_".($i+1).",notes.position as position_".($i+1).", notes.content,notes.note_type_id,notes.parent_notes_id FROM notes JOIN ( $contentQuery ) subquery$i on subquery$i.parent_id_$i = notes.parent_notes_id OR subquery$i.parent_id_$i = notes.id group by notes.id";
+        }
+        $contentQuery .= ";";
 
-        // convert to JSON to return
+        $contentResultSet = $db->query($contentQuery);        
 
+        // convert to JSON to return.  do this by walking through the result
+        // set and building a node at the lowest point in that row. Even if
+        // they are not in perfect order, it is ok. We know we have the entire
+        // tree built from the root, so we will eventually cover all the
+        // nodes.
+        $content = array();
+        $parentIdCount = ($maxDepth - $idDepth)+1;
+        while( $row = $contentResultSet->fetch(PDO::FETCH_ASSOC)) {
+            // first start at the current id and move through the parent_id_i
+            // columns until the id is not the $id or there are no columns
+            // left
+            $node = &$content;
+            $parentIdIndex = 0;
+            $nodeId = $id;
+            for(;$parentIdIndex<$parentIdCount;$parentIdIndex++) {
+                // found a starting point!
+                if($nodeId != $row["parent_id_$parentIdIndex"]) {
+                    // navigate to the appropriate point in the content array tree  
+                    // check if children already.
+                    if(!array_key_exists('children',$node)) {
+                        $node["children"] = array();
+                    }
+                    $nodeChild = &$node["children"];
+                    // specifically find the array and the correct position
+                    $position = $row["position_$parentIdIndex"];
+                    // see if that position exists, otherwise fill in empty
+                    // children until the position does.
+                    if(count($nodeChild) <=  $position) {
+                        for($i=count($nodeChild); $i < ($position+1);$i++) {
+                            array_push($nodeChild,array());
+                        }
+                    }
+                    $node = &$nodeChild[$position];
+                    $nodeId = $row["parent_id_$parentIdIndex"];
+                }                
+            }
+            $node["id"] = $nodeId;
+            $node["content"] = $row["content"];
+        }
         
         $db->query("ROLLBACK;");
+        return json_encode($content);
     }
 
     private function setAugmentedNotesHelper(&$db,&$notesChildren, &$depthToNoteTypeMapping, &$idsToRemove, $depth, $parentId, $languageId) {
@@ -167,7 +214,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             if(!array_key_exists('content',$child)) {
                 // TODO ldoshi -- throw an error. this is malformed input. 
 
-                // TODO ldoshi if any insert fails, error up and out to abort the operation
+                // TODO ldoshi if any insert or update statement fails below, error up and out to abort the operation
             }
 
             $content = $child['content'];
@@ -177,7 +224,18 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 $childId = $child['id'];
                 $update = "UPDATE notes SET content='$content',position=$position,note_type_id=$depthToNoteTypeMapping[$depth],parent_notes_id=$parentId,language_id=$languageId WHERE id = $childId;\n";
                 $db->query($update);
-                unset($idsToRemove[$childId]);
+
+                // ensure that all childIds appear in the subtree for the
+                // subject. The new content with ids provided may reshuffle
+                // existing content within the same subject tree, but may not
+                // include content from other subjects. We do this by ensuring
+                // the id appears in idsToRemove
+                if(array_key_exists($childId,$idsToRemove)) {
+                    unset($idsToRemove[$childId]);
+                } else {
+                    throw new InvalidArgumentException("The id '$childId' was not found under this subject");
+                }
+
                 $nextParentId = $child['id'];
             } else {
                 // run an insert statement
@@ -304,11 +362,19 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             $this->editContentInternal($subjectId,$notesArray['content'],$db);        
         }
         // remove from the array of ids
+        // we already checked the id under the same transaction so no need to
+        // verify that the subjectId existed in idsToRemove
         unset($idsToRemove[$subjectId]);
 
         // if there are children, do this too. 
         if(array_key_exists('children',$notesArray)) {
-            $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idsToRemove, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+            try {
+                $this->setAugmentedNotesHelper($db,$notesArray['children'],$depthToNoteTypeMapping, $idsToRemove, $subjectDepth+1, $subjectId, $this->englishLanguageId);
+            } catch (InvalidArgumentException $e) {
+                $db->query("ROLLBACK;");
+                echo "Caught Exception: ".$e->getMessage()."\n";
+                return false;
+            }
         }
 
         // delete all ids that remain in idsToRemove
@@ -322,6 +388,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         $db->query($deleteQuery);
         
         $db->query("COMMIT;");
+        // TODO ldoshi -- figure out the right way to handle return values/return codes/errors
         return true;
     }
 
