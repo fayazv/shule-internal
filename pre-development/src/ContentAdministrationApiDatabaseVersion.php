@@ -124,7 +124,6 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         } catch (PDOException $e) {
             echo 'Connection failed: ' . $e->getMessage();
         }
-
     }
 
     public function getAugmentedNotes($id) {
@@ -134,12 +133,12 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
         
         // make sure the id exists in the notes table and is the subject level or deeper
         $idDepthQuery = $db->query("SELECT depth,(SELECT MAX(depth) FROM note_types) as max_depth FROM notes JOIN note_types ON notes.note_type_id = note_types.id WHERE notes.id = $id AND depth >= (SELECT depth FROM note_types WHERE name = 'Subject');");
-        $idFound = $idDepthQuery->rowCount();
-        if($idFound == 0 ) {
+        $idFoundCount = $idDepthQuery->rowCount();
+        if($idFoundCount == 0 ) {
             echo "id not found or is not at a level of Subject or lower";
             return;
         }
-        else if($idFound > 1) {
+        else if($idFoundCount > 1) {
             echo "error data integrity violation";
             return;
         }
@@ -199,6 +198,45 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             }
             $node["id"] = $nodeId;
             $node["content"] = $row["content"];
+            
+            // add in tags (if any)
+            $tagResultSet = $db->query("SELECT id,content FROM tags where notes_id = $nodeId;");
+            // if any tags exist, create the key/array pair for "tags"
+            if($tagResultSet->rowCount() > 0) {
+                $node["tags"] = array();
+            }
+            // add each tag's information with into the array
+            while( $tagRow = $tagResultSet->fetch(PDO::FETCH_ASSOC)) {
+                $tagInfo = array();
+                $tagInfo["id"] = $tagRow["id"];
+                $tagInfo["content"] = $tagRow["content"];
+                array_push($node["tags"],$tagInfo);
+            }
+            
+            // add in media (if any)
+            $mediaResultSet = $db->query("SELECT media_types.type,media.id,media.content,media.description FROM media JOIN media_types ON media.media_type_id = media_types.id WHERE notes_id = $nodeId ORDER BY type ;");
+            // if any media exist, create the key/array pair for "media"
+            if($mediaResultSet->rowCount() > 0) {
+                $node["media"] = array();
+            }
+            // add the information for each media entry into the array 
+            while( $mediaRow = $mediaResultSet->fetch(PDO::FETCH_ASSOC)) {
+                $mediaInfo = array();
+                $mediaInfo["id"] = $mediaRow["id"];
+                $mediaInfo["content"] = $mediaRow["content"];
+                // the description may be null
+                if(!is_null($mediaRow["description"])) {
+                    $mediaInfo["description"] = $mediaRow["description"];
+                }
+                // check if the current type already exists as a key in the
+                // media, if not add it. Each type corresponds to an array of
+                // entries
+                $currentMedia = null;
+                if(!array_key_exists($mediaRow["type"],$node["media"])) {
+                    $node["media"][$mediaRow["type"]] = array();
+                }
+                array_push($node["media"][$mediaRow["type"]],$mediaInfo);
+            }
         }
         
         $db->query("ROLLBACK;");
