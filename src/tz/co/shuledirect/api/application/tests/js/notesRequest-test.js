@@ -13,5 +13,11 @@ interactions with the db are NOT tested in this file.
 
 test("Testing getAumentedNotes", function() {
 	ok(makeRequest("notes/getAugmentedNotes", '{"id":123}'), "Response is good i suppose");
-
 })
+
+
+test( "Testing results of getAugmentedNotes", function() {
+  var obj = '{"id":123}';
+ 
+  deepEqual(makeRequest("notes/getAugmentedNotes", '{"id":123}'), obj, "These two objects have the same value" );
+});

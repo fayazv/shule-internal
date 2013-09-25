@@ -6,7 +6,7 @@ which needs constant changing so remember to update the value of EC2_URL
 
 Later, this will be replaced with a more permananent variable.
 */
-var EC2_URL = "ec2-54-200-63-121.us-west-2.compute.amazonaws.com"; 
+var EC2_URL = "ec2-54-200-80-192.us-west-2.compute.amazonaws.com"; 
 //CHANGE THIS APPROPRIATELY!!!!!!!
 
 function makeRequest(methodUrl, inputJson) {
