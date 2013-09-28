@@ -9,17 +9,7 @@
  * which involves displaying the content on the editing pages as well.
  *
  * Usage: 
- *     $sdk = new ContentAdministrationSDKDatabaseVersion(<dataDir>,<subjectId>);
- *       -- <dataDir> is a path that is writeable by this class. This class
- *          emulates the API interaction by backing up the data in a
- *          flatfile. The files are placed in the dataDir and named after the
- *          subjectId
- *       -- <subjectId> is the id for the subject whose notes and syllabus are
- *          being operated on. This is a crutch for this sdk implementation
- *          and will not be necessary for the real one since all notes ids
- *          will be globally unique. A specific instance of
- *          ContentAdministrationSDKImpl can only operate on a single
- *          subjectId
+ *     $sdk = new ContentAdministrationSDKDatabaseVersion();
  */
 
 interface ContentAdministrationSDK
@@ -110,9 +100,6 @@ interface ContentAdministrationSDK
 
 class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSDK
 {
-    private $baseDirectory;
-    private $subjectId;
-
     private $dsn = 'mysql:dbname=shuledirect;host=127.0.0.1';
     private $user = 'root';
     private $englishLanguageId = 1;
@@ -231,7 +218,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                 // check if the current type already exists as a key in the
                 // media, if not add it. Each type corresponds to an array of
                 // entries
-                $currentMedia = null;
+                $currentMedia = NULL;
                 if(!array_key_exists($mediaRow["type"],$node["media"])) {
                     $node["media"][$mediaRow["type"]] = array();
                 }
@@ -314,7 +301,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
                     foreach($mediaTypeArray as $mediaEntry) {
                         // skip if the content field is missing
                         if(array_key_exists('content',$mediaEntry)) {
-                            $description = null;
+                            $description = NULL;
                             // check if there is a description (optional)
                             if(array_key_exists('description',$mediaEntry)) {
                                 $description = $mediaEntry['description'];
@@ -497,8 +484,8 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
     // this should be temporary to help manage db connection stuff. code
     // igniter version should not need this.
     private function addMediaInternal($parentId, $newContent, $type, $description, $db) {
-        if($description == null) {
-            $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', null, (SELECT id FROM media_types WHERE type = '$type'));");
+        if($description == NULL) {
+            $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', NULL, (SELECT id FROM media_types WHERE type = '$type'));");
         } else {
             $db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES ($parentId,'$newContent', '$description', (SELECT id FROM media_types WHERE type = '$type'));");
         }

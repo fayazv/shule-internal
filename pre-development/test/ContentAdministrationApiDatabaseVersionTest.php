@@ -1,14 +1,17 @@
 <?php
 
 include_once('/home/ldoshi/Documents/ShuleTemp/shule-internal/pre-development/src/ContentAdministrationApiDatabaseVersion.php');
+include_once('/home/ldoshi/Documents/ShuleTemp/shule-internal/pre-development/src/ContentReadOnlyApiDatabaseVersion.php');
 
 $sdk = new ContentAdministrationSDKDatabaseVersion();
-$projectId = 1;
-/*$sdk->addContent($projectId, "Form 1");
+$readonlysdk = new ContentReadOnlySDKDatabaseVersion();
+$projectId = $readonlysdk->getId();
+$sdk->addContent($projectId, "Form 1");
 $sdk->addContent($projectId, "Form 2");
 $sdk->addContent($projectId, "Form 3");
 $sdk->addContent($projectId, "Form 4");
-$sdk->addContent(2, "Physics");
+$form2Id = $readonlysdk->getId("Form 1");
+$sdk->addContent($form2Id, "Physics");
 /*$sdk->editContent($projectId+1,"Form 11");
 $sdk->editContent($projectId+2,"Form 1");
 $sdk->deleteContent($projectId+3);
@@ -28,7 +31,22 @@ $sdk->deleteMedia(2,5);*/
 
 $samplePhysicsContent = file_get_contents("input/samplePhysicsNotesAsAllNewContent");
 $sdk->setAugmentedNotes($samplePhysicsContent);
-echo $sdk->getAugmentedNotes(6);
+echo $sdk->getAugmentedNotes(6) . "\n";
+echo $readonlysdk->getId() . "\n";
+echo $readonlysdk->getId("Form 1") . "\n";
+echo $readonlysdk->getId("Form 5") . "\n";
+echo $readonlysdk->getId("Form 1","Physics") . "\n";
+echo $readonlysdk->getId("Form 1","Physics_Fake") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","mechanics") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Electricity and Magnetism") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Electricity and Magnetism and Fake") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","energy") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","Energy") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","Energy_fake") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","energy","potential") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","energy","Potential_fake") . "\n";
+echo $readonlysdk->getId("Form 1","Physics","Mechanics","energy","potential","stuff") . "\n"; // php seems to ignore the extra args
 exit;
 
 $physicsSubjectId = 1;

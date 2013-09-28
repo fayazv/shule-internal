@@ -1,3 +1,4 @@
+use shuledirect;
 -- make sure foreign keys will be enforced
 SET foreign_key_checks = 1;
 
