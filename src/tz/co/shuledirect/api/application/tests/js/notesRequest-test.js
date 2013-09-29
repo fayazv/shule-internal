@@ -12,11 +12,11 @@ interactions with the db are NOT tested in this file.
 
 
 // IMPORT JQUERY!!!!!!
+var EC2_URL = "ec2-54-200-106-165.us-west-2.compute.amazonaws.com";
 
-function ajaxRequest(handler) {
-    var EC2_URL = "ec2-54-200-106-165.us-west-2.compute.amazonaws.com";
-    var eurl = "/api/index.php/" + "notes/getAugmentedNotes";
-    var params = 'inputJson='+ '{"id":123}';   
+function ajaxRequest(methodURL, inputJson, handler) {
+    var eurl = "/api/index.php/" + methodURL;
+    var params = 'inputJson='+ inputJson;   
     
     var post = $.ajax({
     	type: "POST",
@@ -34,17 +34,19 @@ function ajaxRequest(handler) {
 }
 
 
-asyncTest('asyncronous text', function() {
+asyncTest('getAugmentedNotes test1', function() {
     var result = 0;
-    
-    //ok(true);
-    console.log(result);
-    ajaxRequest(function(response) {
+    var methodURL = "notes/getAugmentedNotes";
+    var inputJson = '{"id": 123}';
+
+    var output = '123';
+
+    ajaxRequest(methodURL,inputJson,function(response) {
         result = response;
-        console.log(result);
-	    equal(result, '123', "YEAH BUDDY");
+
+	    equal(result, output, "The result is exactly as expected");
 	    start();
-        console.log("blah");
+        
     });
 
 });
