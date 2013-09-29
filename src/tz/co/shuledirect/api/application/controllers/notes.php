@@ -18,11 +18,11 @@ class Notes extends REST_Controller
     {
         if(!filter_var($int, FILTER_VALIDATE_INT))
         {
-            echo("Integer is not valid"); //TODO: change this so it errors out
+            return "Integer is not valid"; //TODO: change this so it errors out/throws an exception
         }
         else
         {
-            echo("Integer is valid");
+            return "Integer is valid";
         }
     }
 
@@ -31,13 +31,13 @@ class Notes extends REST_Controller
     	
 	$object = json_decode($this->input->post("inputJson"), true);
 	
-        if (array_key_exists("id", $object))
+/*        if (array_key_exists("id", $object))
         {
             $subjectId = $object["id"];
 	    
         } else {
             $this->response("You suck at life");
-        }
+        }*/
         //validateInt($subjectId);
         $augmentedNotesObject = $this->Notes_m->getAugmentedNotes($subjectId);
         $this->response($augmentedNotesObject);	
@@ -57,16 +57,26 @@ class Notes extends REST_Controller
         $this->response($success);
     }
 
-    function addContent($inputJson)
+
+    /**
+     * Add the new content under the id provided. 
+     *
+     * Expected ids: project, form, subject, topic, subtopic, concept 
+     * Unrecognized: no-op
+     */
+    function addContent_post()
     {
-        $object = json_decode($inputJson, true);
+        $object = json_decode($this->post("inputJson"), true);
         if (array_key_exists("id", $object) && array_key_exists("content", $object))
         {
             $parentId = $object["id"];
             $newContent = $object["content"];
+        } else {
+            // TODO ldoshi error condition
         }
 
-        validateInt($parentId);
+        $this->validateInt($parentId);
+        $this->response($hi);
         $success = $this->Notes_m->addContent($parentId, $newContent);
         //success is a boolean
         $this->response($success);
@@ -163,4 +173,5 @@ class Notes extends REST_Controller
         //success is a boolean
         $this->response($success);
     }
+
 }

@@ -5,12 +5,16 @@ class Notes_m extends CI_Model {
     function __construct()
     {
         parent::__construct();
+	$active_group = 'default';
+	$this->load->database();
     }
 
     function getAugmentedNotes($subjectId)
     {
         //TODO: implement this method
-    	return $subjectId;
+	$query = $this->db->query("select id from notes limit 1");
+	$row = $query->row();
+    	return $row->id;
     }
     
 
@@ -23,7 +27,7 @@ class Notes_m extends CI_Model {
 
     function addContent($parentId,$newContent)
     {
-    	return $parentId + $newContent;
+    	return "$parentId . $newContent";
     }
    
 

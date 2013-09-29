@@ -2,8 +2,8 @@
 
 <script>
 var http = new XMLHttpRequest();
-var url = "http://ec2-54-200-106-165.us-west-2.compute.amazonaws.com/api/index.php/notes/getAugmentedNotes";
-var params = 'inputJson={"id":123}';
+var url = "http://ec2-54-200-106-2.us-west-2.compute.amazonaws.com/api/index.php/notes/addContent";
+var params = 'inputJson={"id":"12a3","content":"heythere"}';
 http.open("POST", url, true);
 
 //Send the proper header information along with the request
@@ -14,7 +14,7 @@ http.setRequestHeader("Connection", "close");
 http.onreadystatechange = function() {//Call a function when the state changes.
 			if(http.readyState == 4 && http.status == 200) {
 					   alert(this.responseText);
-					   }
+                        }
 }
 http.send(params);
 

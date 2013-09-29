@@ -45,28 +45,29 @@
 | the active record class
 */
 
-$env_used = 'default'; //name of your development setting
+
+$env_used = 'admin'; //name of your development setting
 if(defined('CIUnit_Version')){
   $env_used .= '_test';
 }
 $active_group = $env_used;
 $active_record = TRUE;
 
-$db['default']['hostname'] = 'localhost';
-$db['default']['username'] = '';
-$db['default']['password'] = '';
-$db['default']['database'] = '';
-$db['default']['dbdriver'] = 'mysql';
-$db['default']['dbprefix'] = '';
-$db['default']['pconnect'] = TRUE;
-$db['default']['db_debug'] = TRUE;
-$db['default']['cache_on'] = FALSE;
-$db['default']['cachedir'] = '';
-$db['default']['char_set'] = 'utf8';
-$db['default']['dbcollat'] = 'utf8_general_ci';
-$db['default']['swap_pre'] = '';
-$db['default']['autoinit'] = TRUE;
-$db['default']['stricton'] = FALSE;
+$db['admin']['hostname'] = 'localhost';
+$db['admin']['username'] = 'admin';
+$db['admin']['password'] = 'menejawadata';
+$db['admin']['database'] = 'shuledirect';
+$db['admin']['dbdriver'] = 'mysql';
+$db['admin']['dbprefix'] = '';
+$db['admin']['pconnect'] = TRUE;
+$db['admin']['db_debug'] = TRUE;
+$db['admin']['cache_on'] = FALSE;
+$db['admin']['cachedir'] = '';
+$db['admin']['char_set'] = 'utf8';
+$db['admin']['dbcollat'] = 'utf8_general_ci';
+$db['admin']['swap_pre'] = '';
+$db['admin']['autoinit'] = FALSE;
+$db['admin']['stricton'] = FALSE;
 
 
 /* End of file database.php */
