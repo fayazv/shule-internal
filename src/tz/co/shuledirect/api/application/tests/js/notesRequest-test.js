@@ -11,13 +11,40 @@ interactions with the db are NOT tested in this file.
 */
 
 
-test("Testing getAumentedNotes", function() {
-	ok(makeRequest("notes/getAugmentedNotes", '{"id":123}'), "Response is good i suppose");
-})
+// IMPORT JQUERY!!!!!!
+
+function ajaxRequest(handler) {
+    var EC2_URL = "ec2-54-200-106-165.us-west-2.compute.amazonaws.com";
+    var eurl = "/api/index.php/" + "notes/getAugmentedNotes";
+    var params = 'inputJson='+ '{"id":123}';   
+    
+    var post = $.ajax({
+    	type: "POST",
+    	url: eurl,
+    	data: params
+    });
+
+    post.done(function(result) {
+        handler(result);
+    });
+
+    post.fail(function() {
+        handler('error');
+    });
+}
 
 
-test( "Testing results of getAugmentedNotes", function() {
-  var obj = '{"id":123}';
- 
-  deepEqual(makeRequest("notes/getAugmentedNotes", '{"id":123}'), obj, "These two objects have the same value" );
+asyncTest('asyncronous text', function() {
+    var result = 0;
+    
+    //ok(true);
+    console.log(result);
+    ajaxRequest(function(response) {
+        result = response;
+        console.log(result);
+	    equal(result, '123', "YEAH BUDDY");
+	    start();
+        console.log("blah");
+    });
+
 });

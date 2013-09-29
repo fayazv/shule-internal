@@ -40,7 +40,7 @@ class Notes extends REST_Controller
         }
         //validateInt($subjectId);
         $augmentedNotesObject = $this->Notes_m->getAugmentedNotes($subjectId);
-	    $this->response($augmentedNotesObject);	
+        $this->response($augmentedNotesObject);	
     }
 
     function setAugmentedNotes_post()

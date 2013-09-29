@@ -6,13 +6,13 @@ which needs constant changing so remember to update the value of EC2_URL
 
 Later, this will be replaced with a more permananent variable.
 */
-var EC2_URL = "ec2-54-200-80-192.us-west-2.compute.amazonaws.com"; 
+var EC2_URL = "http://ec2-54-200-106-165.us-west-2.compute.amazonaws.com"; 
 //CHANGE THIS APPROPRIATELY!!!!!!!
 
 function makeRequest(methodUrl, inputJson) {
 	var http = new XMLHttpRequest();
 	var url = EC2_URL + "/api/index.php/" + methodUrl;
-	var params = 'inputJson='+ inputJson;
+        var params = 'inputJson='+ inputJson;
 	http.open("POST", url, true);
 
 	//Send the proper header information along with the request
@@ -21,9 +21,12 @@ function makeRequest(methodUrl, inputJson) {
 	http.setRequestHeader("Connection", "close");
 
 	http.onreadystatechange = function() {//Call a function when the state changes.
+	    return "HI";
 				if(http.readyState == 4 && http.status == 200) {
-						   return this.responseText;
-						   }
+						   return "APPLE";
+				} else {
+				    return "blah";
+				}
 	}
 	http.send(params);
 }

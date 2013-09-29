@@ -2,7 +2,7 @@
 
 <script>
 var http = new XMLHttpRequest();
-var url = "ec2-54-200-63-121.us-west-2.compute.amazonaws.com/api/index.php/notes/getAugmentedNotes";
+var url = "http://ec2-54-200-106-165.us-west-2.compute.amazonaws.com/api/index.php/notes/getAugmentedNotes";
 var params = 'inputJson={"id":123}';
 http.open("POST", url, true);
 
