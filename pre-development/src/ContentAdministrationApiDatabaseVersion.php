@@ -206,6 +206,7 @@ class ContentAdministrationSDKDatabaseVersion implements ContentAdministrationSD
             if($mediaResultSet->rowCount() > 0) {
                 $node["media"] = array();
             }
+            // TODO ldoshi : add isPrintable field
             // add the information for each media entry into the array 
             while( $mediaRow = $mediaResultSet->fetch(PDO::FETCH_ASSOC)) {
                 $mediaInfo = array();
