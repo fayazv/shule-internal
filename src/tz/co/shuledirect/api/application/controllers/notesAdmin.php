@@ -11,7 +11,7 @@ class NotesAdmin extends REST_Controller
     public function __construct()
     {
         parent::__construct(); 
-        $this->load->model('Notes_m');
+        $this->load->model('NotesAdminModel');
     }
 
 
@@ -22,7 +22,7 @@ class NotesAdmin extends REST_Controller
         {
             $subjectId = $object["id"];
             $newContent = $object["content"];
-            $success = $this->Notes_m->setAugmentedNotes($subjectId, $newContent); 
+            $success = $this->NotesAdminModel->setAugmentedNotes($subjectId, $newContent); 
             $this->response($success);// change this once we figure out how to handle errors
         }
         else
@@ -45,7 +45,7 @@ class NotesAdmin extends REST_Controller
         {
             $parentId = $object["id"];
             $newContent = $object["content"];
-            $success = $this->Notes_m->addContent($parentId, $newContent);
+            $success = $this->NotesAdminModel->addContent($parentId, $newContent);
             $this->response($success);
         } else {
             // TODO ldoshi error condition
@@ -54,14 +54,14 @@ class NotesAdmin extends REST_Controller
         
     }
 
-    function editContent($inputJson)
+    function editContent()
     {
         $object = json_decode($inputJson, true);
         if (array_key_exists("id", $object) && array_key_exists("content", $object))
         {
             $id = $object["id"];
             $editedContent = $object["content"];
-            $success = $this->Notes_m->editContent($id, $editedContent);
+            $success = $this->NotesAdminModel->editContent($id, $editedContent);
             $this->response($success);
         } else {
             //handle the error
@@ -75,7 +75,7 @@ class NotesAdmin extends REST_Controller
         if (array_key_exists("id", $object))
         {
             $id = $object["id"];
-            $success = $this->Notes_m->deleteContent($id);
+            $success = $this->NotesAdminModel->deleteContent($id);
             $this->response($success);
         } else {
             //Handle the error
@@ -92,7 +92,7 @@ class NotesAdmin extends REST_Controller
         {
             $id = $object["id"];
             $newTag = $object["tag"];
-            $success = $this->Notes_m->addTag($id, $newTag);
+            $success = $this->NotesAdminModel->addTag($id, $newTag);
             $this->response($success);
         } else {
             //Go nuts mate
@@ -107,7 +107,7 @@ class NotesAdmin extends REST_Controller
         {
             $parentId = $object["parentId"];
             $tagId = $object["tagId"];
-            $success = $this->Notes_m->deleteTag($parentId, $tagId);
+            $success = $this->NotesAdminModel->deleteTag($parentId, $tagId);
             $this->response($success);
         }
         
@@ -122,7 +122,7 @@ class NotesAdmin extends REST_Controller
             $newContent = $object["content"];
             $type = $object["type"];
             $description = $object["description"];
-            $success = $this->Notes_m->addMedia($parentId, $newContent, $type, $description);
+            $success = $this->NotesAdminModel->addMedia($parentId, $newContent, $type, $description);
             $this->response($success);
     }
         }
@@ -136,7 +136,7 @@ class NotesAdmin extends REST_Controller
             $parentId = $object["parentId"];
             $mediaId = $object["mediaId"];
             $this->response($success);
-            $success = $this->Notes_m->deleteMedia($parentId, $mediaId);
+            $success = $this->NotesAdminModel->deleteMedia($parentId, $mediaId);
         } else {
             //you know what to do
         }
