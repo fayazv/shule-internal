@@ -11,91 +11,81 @@ class Notes extends REST_Controller
     public function __construct()
     {
         parent::__construct(); 
-        $this->load->model('NotesModel');
+        $this->load->model('Notes_model');
     }
 
-    function getId() 
+    function getId_post() 
     {
         $object = json_decode($this->input->post("inputJson"), true);
         if ($object == null) 
         {
-            $id = $this->NotesModel->getId();
+            $id = $this->Notes_model->getId();
         } 
         else 
         {
-            if (array_key_exists("content", $object)) 
+            if (array_key_exists("form", $object))
             {
-                $content = $object["content"];
-                if (array_key_exists("form", $object))
+                $form = $object["form"];
+                if (array_key_exists("subject", $object))
                 {
-                    $form = $object["form"];
-                    if (array_key_exists("subject", $object))
+                    $subject = $object["subject"];
+                    if(array_key_exists("topic", $object))
                     {
-                        $subject = $object["subject"];
-                        if(array_key_exists("topic", $object))
+                        $topic = $object["topic"];
+                        if(array_key_exists("subtopic", $object))
                         {
-                            $topic = $object["topic"];
-                            if(array_key_exists("subtopic", $object))
+                            $subtopic = $object["subtopic"];
+                            if(array_key_exists("concept", $object))
                             {
-                                $subtopic = $object["subtopic"];
-                                if(array_key_exists("concept", $object))
-                                {
-                                    $concept = $object["concept"];
-                                    $id = $this->NotesModel->getId($content, $form, $subject, $topic, $subtopic, $concept);
-                                }
-                                else
-                                {
-                                    $id = $this->NotesModel->getId($content, $form, $subject, $topic, $subtopic);
-                                }
+                                $concept = $object["concept"];
+                                $id = $this->Notes_model->getId($form, $subject, $topic, $subtopic, $concept);
                             }
                             else
                             {
-                                $id = $this->NotesModel->getId($content, $form, $subject, $topic);
+                                $id = $this->Notes_model->getId($form, $subject, $topic, $subtopic);
                             }
                         }
                         else
                         {
-                            $id = $this->NotesModel->getId($content, $form, $subject);
+                            $id = $this->Notes_model->getId($form, $subject, $topic);
                         }
                     }
                     else
                     {
-                        $id = $this->NotesModel->getId($content, $form);
+                        $id = $this->Notes_model->getId($form, $subject);
                     }
-                } 
+                }
                 else
                 {
-                    //throw some error because it doesnt make sense to have content without a form
+                    $id = $this->Notes_model->getId($form);
                 }
             } 
             else
             {
                 //no content so query empty...
-                $id = $shuleId = $this->NotesModel->getId();
+                $id = $this->Notes_model->getId();
             }
         }
-        $responseJson = '{"id":' + $id + '}'
+        $responseJson = '{"id":' + $id + '}';
         $this->response($responseJson); 
     }
 
-
     function getAugmentedNotes_post()
     {
-	    $object = json_decode($this->input->post("inputJson"), true);
+        $object = json_decode($this->input->post("inputJson"), true);
 	
         if (array_key_exists("id", $object))
         {
             $subjectId = $object["id"];
-            $augmentedNotesObject = $this->NotesModel->getAugmentedNotes($subjectId);
-	        $this->response($augmentedNotesObject);   
+            $augmentedNotesObject = $this->Notes_model->getAugmentedNotes($subjectId);
+            $this->response($augmentedNotesObject);   
         } 
         else 
         {
             $this->response("Please include an id in your query");
         }	
     }
-
-
-    
-
+   
 }
+
+

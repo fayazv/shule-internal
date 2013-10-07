@@ -11,7 +11,7 @@ class NotesAdmin extends REST_Controller
     public function __construct()
     {
         parent::__construct(); 
-        $this->load->model('NotesAdminModel');
+        $this->load->model('Notes_admin_model');
     }
 
 
@@ -22,7 +22,7 @@ class NotesAdmin extends REST_Controller
         {
             $subjectId = $object["id"];
             $newContent = $object["content"];
-            $success = $this->NotesAdminModel->setAugmentedNotes($subjectId, $newContent); 
+            $success = $this->Notes_admin_model->setAugmentedNotes($subjectId, $newContent); 
             $this->response($success);// change this once we figure out how to handle errors
         }
         else
@@ -45,7 +45,7 @@ class NotesAdmin extends REST_Controller
         {
             $parentId = $object["id"];
             $newContent = $object["content"];
-            $success = $this->NotesAdminModel->addContent($parentId, $newContent);
+            $success = $this->Notes_admin_model->addContent($parentId, $newContent);
             $this->response($success);
         } else {
             // TODO ldoshi error condition
@@ -61,7 +61,7 @@ class NotesAdmin extends REST_Controller
         {
             $id = $object["id"];
             $editedContent = $object["content"];
-            $success = $this->NotesAdminModel->editContent($id, $editedContent);
+            $success = $this->Notes_admin_model->editContent($id, $editedContent);
             $this->response($success);
         } else {
             //handle the error
@@ -75,7 +75,7 @@ class NotesAdmin extends REST_Controller
         if (array_key_exists("id", $object))
         {
             $id = $object["id"];
-            $success = $this->NotesAdminModel->deleteContent($id);
+            $success = $this->Notes_admin_model->deleteContent($id);
             $this->response($success);
         } else {
             //Handle the error
@@ -92,7 +92,7 @@ class NotesAdmin extends REST_Controller
         {
             $id = $object["id"];
             $newTag = $object["tag"];
-            $success = $this->NotesAdminModel->addTag($id, $newTag);
+            $success = $this->Notes_admin_model->addTag($id, $newTag);
             $this->response($success);
         } else {
             //Go nuts mate
@@ -107,7 +107,7 @@ class NotesAdmin extends REST_Controller
         {
             $parentId = $object["parentId"];
             $tagId = $object["tagId"];
-            $success = $this->NotesAdminModel->deleteTag($parentId, $tagId);
+            $success = $this->Notes_admin_model->deleteTag($parentId, $tagId);
             $this->response($success);
         }
         
@@ -122,9 +122,8 @@ class NotesAdmin extends REST_Controller
             $newContent = $object["content"];
             $type = $object["type"];
             $description = $object["description"];
-            $success = $this->NotesAdminModel->addMedia($parentId, $newContent, $type, $description);
+            $success = $this->Notes_admin_model->addMedia($parentId, $newContent, $type, $description);
             $this->response($success);
-    }
         }
     }
 
@@ -136,7 +135,7 @@ class NotesAdmin extends REST_Controller
             $parentId = $object["parentId"];
             $mediaId = $object["mediaId"];
             $this->response($success);
-            $success = $this->NotesAdminModel->deleteMedia($parentId, $mediaId);
+            $success = $this->Notes_admin_model->deleteMedia($parentId, $mediaId);
         } else {
             //you know what to do
         }
