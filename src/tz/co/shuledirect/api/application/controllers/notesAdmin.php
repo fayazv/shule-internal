@@ -54,9 +54,9 @@ class NotesAdmin extends REST_Controller
         
     }
 
-    function editContent()
+    function editContent_post()
     {
-        $object = json_decode($inputJson, true);
+        $object = json_decode($this->post("inputJson"), true);
         if (array_key_exists("id", $object) && array_key_exists("content", $object))
         {
             $id = $object["id"];
@@ -69,9 +69,9 @@ class NotesAdmin extends REST_Controller
         
     }
 
-    function deleteContent($inputJson)
-    {
-        $object = json_decode($inputJson, true);
+    function deleteContent_post()
+    { 
+        $object = json_decode($this->post("inputJson"), true);
         if (array_key_exists("id", $object))
         {
             $id = $object["id"];
@@ -81,8 +81,6 @@ class NotesAdmin extends REST_Controller
             //Handle the error
         }
         
-
-         
     }
 
     function addTag($inputJson)

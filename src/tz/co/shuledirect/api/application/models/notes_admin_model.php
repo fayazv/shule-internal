@@ -53,7 +53,6 @@ class Notes_admin_model extends CI_Model {
         // TODO error handling and safety restrictions?
         $this->db->query("DELETE FROM notes WHERE id = $id;");
         return true;
-
     }
 
 
