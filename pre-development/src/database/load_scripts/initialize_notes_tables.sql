@@ -20,4 +20,7 @@ INSERT INTO languages(language) VALUES ('English');
 
 -- prepare notes
 INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ("ShuleDirect",0,1,NULL,1);
-
+INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ("Form 1",0,2,(select id from notes project where project.content = 'ShuleDirect' and project.parent_notes_id is null),1);
+INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ("Form 2",1,2,(select id from notes project where project.content = 'ShuleDirect' and project.parent_notes_id is null),1);
+INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ("Form 3",2,2,(select id from notes project where project.content = 'ShuleDirect' and project.parent_notes_id is null),1);
+INSERT INTO notes(content,position,note_type_id,parent_notes_id,language_id) VALUES ("Form 4",3,2,(select id from notes project where project.content = 'ShuleDirect' and project.parent_notes_id is null),1);
