@@ -11,167 +11,91 @@ class Notes extends REST_Controller
     public function __construct()
     {
         parent::__construct(); 
-        $this->load->model('Notes_m');
+        $this->load->model('NotesModel');
     }
 
-    function validateInt($int)
+    function getId() 
     {
-        if(!filter_var($int, FILTER_VALIDATE_INT))
+        $object = json_decode($this->input->post("inputJson"), true);
+        if ($object == null) 
         {
-            return "Integer is not valid"; //TODO: change this so it errors out/throws an exception
-        }
-        else
+            $id = $this->NotesModel->getId();
+        } 
+        else 
         {
-            return "Integer is valid";
+            if (array_key_exists("content", $object)) 
+            {
+                $content = $object["content"];
+                if (array_key_exists("form", $object))
+                {
+                    $form = $object["form"];
+                    if (array_key_exists("subject", $object))
+                    {
+                        $subject = $object["subject"];
+                        if(array_key_exists("topic", $object))
+                        {
+                            $topic = $object["topic"];
+                            if(array_key_exists("subtopic", $object))
+                            {
+                                $subtopic = $object["subtopic"];
+                                if(array_key_exists("concept", $object))
+                                {
+                                    $concept = $object["concept"];
+                                    $id = $this->NotesModel->getId($content, $form, $subject, $topic, $subtopic, $concept);
+                                }
+                                else
+                                {
+                                    $id = $this->NotesModel->getId($content, $form, $subject, $topic, $subtopic);
+                                }
+                            }
+                            else
+                            {
+                                $id = $this->NotesModel->getId($content, $form, $subject, $topic);
+                            }
+                        }
+                        else
+                        {
+                            $id = $this->NotesModel->getId($content, $form, $subject);
+                        }
+                    }
+                    else
+                    {
+                        $id = $this->NotesModel->getId($content, $form);
+                    }
+                } 
+                else
+                {
+                    //throw some error because it doesnt make sense to have content without a form
+                }
+            } 
+            else
+            {
+                //no content so query empty...
+                $id = $shuleId = $this->NotesModel->getId();
+            }
         }
+        $responseJson = '{"id":' + $id + '}'
+        $this->response($responseJson); 
     }
+
 
     function getAugmentedNotes_post()
     {
-    	
-	$object = json_decode($this->input->post("inputJson"), true);
+	    $object = json_decode($this->input->post("inputJson"), true);
 	
-/*        if (array_key_exists("id", $object))
-        {
-            $subjectId = $object["id"];
-	    
-        } else {
-            $this->response("You suck at life");
-        }*/
-        //validateInt($subjectId);
-        $augmentedNotesObject = $this->Notes_m->getAugmentedNotes($subjectId);
-        $this->response($augmentedNotesObject);	
-    }
-
-    function setAugmentedNotes_post()
-    {
-    	$object = json_decode($this->input->post("inputJson"), true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object))
-        {
-            $subjectId = $object["id"];
-            $newContent = $object["content"];
-        }
-
-        //validateInt($subjectId);
-        $success = $this->Notes_m->setAugmentedNotes($subjectId, $newContent); 
-        $this->response($success);
-    }
-
-
-    /**
-     * Add the new content under the id provided. 
-     *
-     * Expected ids: project, form, subject, topic, subtopic, concept 
-     * Unrecognized: no-op
-     */
-    function addContent_post()
-    {
-        $object = json_decode($this->post("inputJson"), true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object))
-        {
-            $parentId = $object["id"];
-            $newContent = $object["content"];
-        } else {
-            // TODO ldoshi error condition
-        }
-
-        $this->validateInt($parentId);
-        $this->response($hi);
-        $success = $this->Notes_m->addContent($parentId, $newContent);
-        //success is a boolean
-        $this->response($success);
-    }
-
-    function editContent($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object))
-        {
-            $id = $object["id"];
-            $editedContent = $object["content"];
-        }
-
-        validateInt($id);
-        $success = $this->Notes_m->editContent($id, $editedContent);
-        //success is a boolean
-        $this->response($success);
-    }
-
-    function deleteContent($inputJson)
-    {
-        $object = json_decode($inputJson, true);
         if (array_key_exists("id", $object))
         {
-            $id = $object["id"];
-        }
-        validateInt($id);
-
-        $success = $this->Notes_m->deleteContent($id);
-        $this->response($success); 
-    }
-
-    function addTag($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("id", $object) && array_key_exists("tag", $object))
+            $subjectId = $object["id"];
+            $augmentedNotesObject = $this->NotesModel->getAugmentedNotes($subjectId);
+	        $this->response($augmentedNotesObject);   
+        } 
+        else 
         {
-            $id = $object["id"];
-            $newTag = $object["tag"];
-        }
-
-        validateInt($id);
-        $success = $this->Notes_m->addTag($id, $newTag);
-        //success is a boolean
-        $this->response($success);
+            $this->response("Please include an id in your query");
+        }	
     }
 
-    function deleteTag($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("parentId", $object) && array_key_exists("tagId", $object))
-        {
-            $parentId = $object["parentId"];
-            $tagId = $object["tagId"];
-        }
 
-        validateInt($parentId);
-        validateInt($tagId);
-        $success = $this->Notes_m->deleteTag($parentId, $tagId);
-        //success is a boolean
-        $this->response($success);
-    }
-
-    function addMedia($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object) && array_key_exists("type", $object) && array_key_exists("description", $object))
-        {
-            $parentId = $object["id"];
-            $newContent = $object["content"];
-            $type = $object["type"];
-            $description = $object["description"];
-        }
-
-        validateInt($parentId);
-        $success = $this->Notes_m->addMedia($parentId, $newContent, $type, $description);
-        //success is a boolean
-        $this->response($success);
-    }
-
-    function deleteMedia($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("parentId", $object) && array_key_exists("mediaId", $object))
-        {
-            $parentId = $object["parentId"];
-            $mediaId = $object["mediaId"];
-        }
-
-        validateInt($parentId);
-        validateInt($mediaId);
-        $success = $this->Notes_m->deleteMedia($parentId, $mediaId);
-        //success is a boolean
-        $this->response($success);
-    }
+    
 
 }
