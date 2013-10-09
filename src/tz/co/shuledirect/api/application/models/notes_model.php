@@ -66,8 +66,8 @@ class Notes_model extends CI_Model {
 
         $selectIdQuery = "SELECT $returnId FROM notes AS project $joinClause $whereClause;";
         $idQuery = $this->db->query($selectIdQuery);
-        if($idRow = $idQuery->row()) {
-            return $idRow->id;
+        if($idQuery->num_rows() > 0) {
+            return $idQuery->row()->id;
         } else {
             // TODO whats the correct 'not found' handling?
             return 0;

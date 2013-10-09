@@ -26,6 +26,7 @@ class Notes_admin_model extends CI_Model {
     function addContent($parentId,$newContent)
     {
         // TODO handle database errors
+        // TODO should all the queries need to check if numRow() > 0?
         // error also if try add a child to a paragraph tier which does not support children. 
         $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $noteTypeIdQuery = $this->db->query("select id from note_types AS note_types_one where note_types_one.depth = (select (note_types_two.depth+1) as new_depth from notes JOIN note_types AS note_types_two ON notes.note_type_id = note_types_two.id where notes.id = $parentId);");

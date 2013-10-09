@@ -23,6 +23,7 @@ class Notes extends REST_Controller
         } 
         else 
         {
+            // TODO error if subject provided, but form is not, and so on if a lower level of the hierarchy is present without all the higher ones. 
             if (array_key_exists("form", $object))
             {
                 $form = $object["form"];
@@ -66,8 +67,9 @@ class Notes extends REST_Controller
                 $id = $this->Notes_model->getId();
             }
         }
-        $responseJson = '{"id":' + $id + '}';
-        $this->response($responseJson); 
+        $responseJson = array();
+        $responseJson['id'] = $id;
+        $this->response(json_encode($responseJson)); 
     }
 
     function getAugmentedNotes_post()
