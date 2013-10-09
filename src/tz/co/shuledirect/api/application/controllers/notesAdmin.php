@@ -137,8 +137,8 @@ class NotesAdmin extends REST_Controller
         if (array_key_exists("id", $object))
         {
             $id = $object["id"];
-            $this->response($success);
             $success = $this->Notes_admin_model->deleteMedia($id);
+            $this->response($success);
         } else {
             // TODO handle errors
         }
