@@ -27,7 +27,7 @@ class NotesAdmin extends REST_Controller
         }
         else
         {
-            //Do something with errors
+            //TODO Do something with errors
         }
     }
 
@@ -41,9 +41,9 @@ class NotesAdmin extends REST_Controller
     function addContent_post()
     {
         $object = json_decode($this->post("inputJson"), true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object))
+        if (array_key_exists("parentId", $object) && array_key_exists("content", $object))
         {
-            $parentId = $object["id"];
+            $parentId = $object["parentId"];
             $newContent = $object["content"];
             $success = $this->Notes_admin_model->addContent($parentId, $newContent);
             $this->response($success);
@@ -64,7 +64,7 @@ class NotesAdmin extends REST_Controller
             $success = $this->Notes_admin_model->editContent($id, $editedContent);
             $this->response($success);
         } else {
-            //handle the error
+            //TODO handle the error
         }
         
     }
@@ -78,64 +78,69 @@ class NotesAdmin extends REST_Controller
             $success = $this->Notes_admin_model->deleteContent($id);
             $this->response($success);
         } else {
-            //Handle the error
+            //TODO Handle the error
         }
         
     }
 
-    function addTag($inputJson)
+    function addTag_post()
     {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("id", $object) && array_key_exists("tag", $object))
+        $object = json_decode($this->post("inputJson"), true);
+        if (array_key_exists("parentId", $object) && array_key_exists("content", $object))
+        {
+            $parentId = $object["parentId"];
+            $newContent = $object["content"];
+            $success = $this->Notes_admin_model->addTag($parentId, $newContent);
+            $this->response($success);
+        } else {
+            // TODO handle error
+        }
+
+    }
+
+    function deleteTag_post()
+    {
+        $object = json_decode($this->post("inputJson"), true);
+        if (array_key_exists("id", $object))
         {
             $id = $object["id"];
-            $newTag = $object["tag"];
-            $success = $this->Notes_admin_model->addTag($id, $newTag);
+            $success = $this->Notes_admin_model->deleteTag($id);
             $this->response($success);
         } else {
-            //Go nuts mate
-        }
-
+            // TODO handle error
+        }        
     }
 
-    function deleteTag($inputJson)
+    function addMedia_post()
     {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("parentId", $object) && array_key_exists("tagId", $object))
-        {
+        $object = json_decode($this->post("inputJson"), true);
+        if (array_key_exists("parentId", $object) && array_key_exists("content", $object) && array_key_exists("type", $object)) {
             $parentId = $object["parentId"];
-            $tagId = $object["tagId"];
-            $success = $this->Notes_admin_model->deleteTag($parentId, $tagId);
-            $this->response($success);
-        }
-        
-    }
-
-    function addMedia($inputJson)
-    {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("id", $object) && array_key_exists("content", $object) && array_key_exists("type", $object) && array_key_exists("description", $object))
-        {
-            $parentId = $object["id"];
             $newContent = $object["content"];
             $type = $object["type"];
-            $description = $object["description"];
+            if(array_key_exists("description", $object)) {
+                $description = $object["description"];
+            } else {
+                $description = NULL;
+            }
+           
             $success = $this->Notes_admin_model->addMedia($parentId, $newContent, $type, $description);
             $this->response($success);
+        } else {
+            // TODO handle error 
         }
     }
 
-    function deleteMedia($inputJson)
+    function deleteMedia_post()
     {
-        $object = json_decode($inputJson, true);
-        if (array_key_exists("parentId", $object) && array_key_exists("mediaId", $object))
+        $object = json_decode($this->post("inputJson"), true);
+        if (array_key_exists("id", $object))
         {
-            $parentId = $object["parentId"];
-            $mediaId = $object["mediaId"];
+            $id = $object["id"];
             $this->response($success);
-            $success = $this->Notes_admin_model->deleteMedia($parentId, $mediaId);
+            $success = $this->Notes_admin_model->deleteMedia($id);
         } else {
-            //you know what to do
+            // TODO handle errors
         }
     }
 

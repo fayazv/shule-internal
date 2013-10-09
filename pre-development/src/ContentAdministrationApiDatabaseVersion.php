@@ -12,6 +12,7 @@
  *     $sdk = new ContentAdministrationSDKDatabaseVersion();
  */
 
+// TODO ldoshi -- update deleteTag and deleteMedia to only use the id of the tag/media
 interface ContentAdministrationSDK
 {
     
