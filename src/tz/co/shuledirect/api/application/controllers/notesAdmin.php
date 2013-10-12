@@ -18,11 +18,10 @@ class NotesAdmin extends REST_Controller
     function setAugmentedNotes_post()
     {
     	$object = json_decode($this->input->post("inputJson"), true);
+        // these checks ensure at least the subject level is defined. 
         if (array_key_exists("id", $object) && array_key_exists("content", $object))
         {
-            $subjectId = $object["id"];
-            $newContent = $object["content"];
-            $success = $this->Notes_admin_model->setAugmentedNotes($subjectId, $newContent); 
+            $success = $this->Notes_admin_model->setAugmentedNotes($object); 
             $this->response($success);// change this once we figure out how to handle errors
         }
         else

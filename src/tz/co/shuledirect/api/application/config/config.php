@@ -14,7 +14,8 @@
 | path to your installation.
 |
 */
-$config['base_url']	= 'http://ec2-54-213-109-207.us-west-2.compute.amazonaws.com/api/';
+//$config['base_url']	= 'http://ec2-54-213-109-207.us-west-2.compute.amazonaws.com/api/';
+$config['base_url']	= 'http://localhost/shuledirect/';
 
 /*
 |--------------------------------------------------------------------------

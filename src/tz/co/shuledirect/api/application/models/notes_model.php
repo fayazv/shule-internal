@@ -135,7 +135,7 @@ class Notes_model extends CI_Model {
         return json_encode($content);
     }
     
-    public function getId($form = NULL, $subject = NULL, $topic = NULL, $subtopic = NULL, $concept = NULL)
+    function getId($form = NULL, $subject = NULL, $topic = NULL, $subtopic = NULL, $concept = NULL)
     {
         $project = "ShuleDirect";
 
