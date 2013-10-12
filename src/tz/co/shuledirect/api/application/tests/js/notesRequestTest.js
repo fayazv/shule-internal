@@ -37,7 +37,6 @@ function getContentFromId(contentTree,id) {
             if(contentTree.hasOwnProperty('children')) {
                 for(i=0; i<contentTree['children'].length;i++) {
                     var content = getContentFromId(contentTree['children'][i], id);
-                    alert(content);
                     if(content != null){
                         // we're done
                         return content;
@@ -119,6 +118,10 @@ test('addContent, getId and getAugmentedNotes test1', function() {
     output = ajaxRequest("notesAdmin/addContent", subTopicJson2);
     equal(output, true, "added electricity as a topic");
 
+    output = ajaxRequest("notes/getId",'{"form": "Form 1", "subject": "Physics", "topic":"Mechanics", "subtopic":"Force"}');
+    ok(output["id"],"The request went through");
+    var subtopicId = output["id"];
+
     //now we getAugmentedNotes of the physics subject that we just put in
     var subjectIdJson = '{"id":' + subjectId +'}';
     output = ajaxRequest("notes/getAugmentedNotes", subjectIdJson);
@@ -127,9 +130,50 @@ test('addContent, getId and getAugmentedNotes test1', function() {
 
     // //parse the Augmented Notes to find what we want
     // //TODO do this
-    content = getContentFromId(augmentedNotes, topicId);
-    alert(content);
-    equal(content, "Mechanics", "The id and content match correctly!");
+    content = getContentFromId(augmentedNotes, subjectId);
+    equal(content, "Physics", "The subjectid and content match correctly!");
 
+    content = getContentFromId(augmentedNotes, topicId);
+    equal(content, "Mechanics", "The topicid and content match correctly!");
+
+    content = getContentFromId(augmentedNotes, subtopicId);
+    equal(content, "Force", "The subtopicid and content match correctly!");
 });
 
+
+
+test("adding tags and media", function() {
+
+    output = ajaxRequest("notes/getId",'{"form": "Form 1", "subject": "Physics"}');
+    ok(output["id"],"The request went through");
+    var subjectId = output["id"];
+
+    output = ajaxRequest("notes/getId",'{"form": "Form 1", "subject": "Physics", "topic":"Mechanics"}');
+    ok(output["id"],"The request went through");
+    var topicId = output["id"];
+
+    output = ajaxRequest("notes/getId",'{"form": "Form 1", "subject": "Physics", "topic":"Mechanics", "subtopic":"Force"}');
+    ok(output["id"],"The request went through");
+    var subtopicId = output["id"];
+
+    var subjectTag1 = '{"parentId":' + subjectId + ',"content":"motion"}';
+    var subjectTag2 = '{"parentId":' + subjectId + ',"content":"proton"}';
+
+
+    var topicTag1 = '{"parentId":' + topicId + ',"content":"newton"}';
+    var topicTag2 = '{"parentId":' + topicId + ',"content":"velocity"}';
+
+
+    output = ajaxRequest("notesAdmin/addTag", subjectTag1);
+    equal(output, true, "added motion as a tag");
+
+    output = ajaxRequest("notesAdmin/addTag", subjectTag2);
+    equal(output, true, "added proton as a tag");
+
+    output = ajaxRequest("notesAdmin/addTag", topicTag1);
+    equal(output, true, "added newton as a tag");
+
+    output = ajaxRequest("notesAdmin/addTag", topicTag2);
+    equal(output, true, "added velocity as a tag");
+
+});
