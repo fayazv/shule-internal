@@ -137,6 +137,8 @@ class Notes_model extends CI_Model {
     
     function getId($form = NULL, $subject = NULL, $topic = NULL, $subtopic = NULL, $concept = NULL)
     {
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $project = "ShuleDirect";
 
         // build up the WHERE and JOIN clauses depending on how many parameters are provided. The params provided also determine which id to return 
@@ -154,7 +156,7 @@ class Notes_model extends CI_Model {
 
                 if($topic != NULL) {
                     $joinClause .= " JOIN notes topic ON subject.id = topic.parent_notes_id";
-                    $whereClause .= " AND topic.content = ".$this->db->escape($subject)." ";
+                    $whereClause .= " AND topic.content = ".$this->db->escape($topic)." ";
 
                     if($subtopic != NULL) {
                         $joinClause .= " JOIN notes subtopic ON topic.id = subtopic.parent_notes_id";

@@ -224,6 +224,7 @@ class Notes_admin_model extends CI_Model {
         // TODO handle database errors
         // TODO should all the queries need to check if numRow() > 0?
         // error also if try add a child to a paragraph tier which does not support children. 
+        //TODO: The line below should NOT be here. Dunno why it is required.
         $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $noteTypeIdQuery = $this->db->query("select id from note_types AS note_types_one where note_types_one.depth = (select (note_types_two.depth+1) as new_depth from notes JOIN note_types AS note_types_two ON notes.note_type_id = note_types_two.id where notes.id = ".$this->db->escape($parentId).");");
         $noteTypeIdRow = $noteTypeIdQuery->row();
@@ -243,6 +244,9 @@ class Notes_admin_model extends CI_Model {
     function editContent($id,$editedContent)
     {
         // TODO error handling
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
+
         $this->db->query("UPDATE notes SET content=".$this->db->escape($editedContent)." WHERE id = $id;");
         return true;
     }
@@ -251,6 +255,8 @@ class Notes_admin_model extends CI_Model {
     function deleteContent($id)
     {
         // TODO error handling and safety restrictions?
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $this->db->query("DELETE FROM notes WHERE id = $id;");
         return true;
     }
@@ -259,6 +265,8 @@ class Notes_admin_model extends CI_Model {
     function addTag($parentId, $newContent)
     {
         // TODO error handling and safety restrictions?
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $this->db->query("INSERT INTO tags(notes_id,content) VALUES (".$this->db->escape($parentId).",".$this->db->escape($newContent).");");
         return true;
     }
@@ -267,6 +275,8 @@ class Notes_admin_model extends CI_Model {
     function deleteTag($id)
     {
         // TODO error handling and safety restrictions?
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $this->db->query("DELETE FROM tags WHERE id = ".$this->db->escape($id).";");
         return true;
     }
@@ -275,6 +285,8 @@ class Notes_admin_model extends CI_Model {
     function addMedia($parentId, $newContent, $type, $description)
     {
         // TODO error handling and safety restrictions?
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         if($description == NULL) {
             $this->db->query("INSERT INTO media (notes_id,content,description,media_type_id) VALUES (".$this->db->escape($parentId).",".$this->db->escape($newContent).", NULL, (SELECT id FROM media_types WHERE type = ".$this->db->escape($type)."));");
         } else {
@@ -287,6 +299,8 @@ class Notes_admin_model extends CI_Model {
     function deleteMedia($id)
     {
         // TODO error handling and safety restrictions?
+        //TODO: The line below should NOT be here. Dunno why it is required.
+        $this->db->query("START TRANSACTION WITH CONSISTENT SNAPSHOT ");
         $this->db->query("DELETE FROM media WHERE id = ".$this->db->escape($id).";");
     	return true;
     }
