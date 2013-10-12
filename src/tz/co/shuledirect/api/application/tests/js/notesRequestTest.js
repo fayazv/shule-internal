@@ -24,6 +24,35 @@ function ajaxRequest(methodURL, inputJson) {
     return $.parseJSON($.parseJSON(post.responseText)); //dunno why we have to parse this twice
 }
 
+//given the entire augmented notes and a specific id, this method returns the 
+//content associated with that particular id
+function getContentFromId(contentTree,id) {
+    // ensure there is an id element to have a chance
+    if(contentTree.hasOwnProperty('id')) {
+        // check if we already found the id. if so, return it's contents
+        if(contentTree['id'] == id) {
+            return contentTree['content'];
+        } else {
+            // otherwise recurse on every child (if any exist). otherwise we're done. 
+            if(contentTree.hasOwnProperty('children')) {
+                for(i=0; i<contentTree['children'].length;i++) {
+                    var content = getContentFromId(contentTree['children'][i], id);
+                    alert(content);
+                    if(content != null){
+                        // we're done
+                        return content;
+                    }
+                }           
+            } else {
+                return null;
+            }
+        }
+    } else {
+        // no id --> return NULL
+        return null;
+    }
+}
+
 
 /**
 Test 1
@@ -77,7 +106,7 @@ test('addContent, getId and getAugmentedNotes test1', function() {
     output = ajaxRequest("notes/getId",'{"form": "Form 1", "subject": "Physics", "topic":"Mechanics"}');
     ok(output["id"],"The request went through");
     var topicId = output["id"];
-    alert(topicId);
+    //alert(topicId);
 
     //add some subTopics to physics
     var subTopicJson1 = '{"parentId":' + topicId + ',"content":"Force"}';
@@ -93,10 +122,14 @@ test('addContent, getId and getAugmentedNotes test1', function() {
     //now we getAugmentedNotes of the physics subject that we just put in
     var subjectIdJson = '{"id":' + subjectId +'}';
     output = ajaxRequest("notes/getAugmentedNotes", subjectIdJson);
-    equal(output, true, "This is the easiest way to print my response lol");
+    ok(output,"This returns some notes");
     var augmentedNotes = output;
 
     // //parse the Augmented Notes to find what we want
     // //TODO do this
+    content = getContentFromId(augmentedNotes, topicId);
+    alert(content);
+    equal(content, "Mechanics", "The id and content match correctly!");
 
 });
+
