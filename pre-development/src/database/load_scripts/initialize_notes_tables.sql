@@ -2,6 +2,10 @@ use shuledirect;
 -- make sure foreign keys will be enforced
 SET foreign_key_checks = 1;
 
+-- add uniqueness constraint here for notes (parent_notes_id,content) since that cannot be done from Mysql Workbench
+-- UNIQUE constraint has a byte-limit so use the first 500 characters from content
+ALTER TABLE notes ADD CONSTRAINT unique_notes_content_per_parent UNIQUE (parent_notes_id,content(500));
+
 -- prepare note_types
 INSERT INTO note_types(name,depth) VALUES ('Project',0 ) ; 
 INSERT INTO note_types(name,depth) VALUES ('Form',1 ) ; 
